@@ -1,0 +1,18 @@
+{
+  "name": "Finanças ERP Doméstico",
+  "short_name": "Finanças ERP",
+  "description": "ERP de Finanças Domésticas para Fabrício e Patrícia",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#0a0c10",
+  "theme_color": "#3a86ff",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
