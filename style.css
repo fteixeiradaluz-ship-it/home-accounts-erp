@@ -2065,6 +2065,27 @@ body.light-mode .bulk-controls-wrapper {
 .toast.warning { border-left-color: var(--warning); }
 .toast.danger { border-left-color: var(--danger); }
 
+.toast-close-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 1.2rem;
+  font-weight: bold;
+  padding: 0 4px;
+  margin-left: auto;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition-fast);
+  line-height: 1;
+}
+
+.toast-close-btn:hover {
+  color: var(--text-primary);
+}
+
 .toast.fade-out {
   opacity: 0;
   transform: translateY(-20px);

@@ -72,8 +72,15 @@ function showToast(message, type = 'info') {
   else if (type === 'warning') icon = '⚠️';
   else if (type === 'danger') icon = '❌';
 
-  toast.innerHTML = `<span style="font-size: 1.1rem; line-height: 1; flex-shrink: 0;">${icon}</span> <span style="flex-grow: 1;">${message}</span>`;
+  toast.innerHTML = `<span style="font-size: 1.1rem; line-height: 1; flex-shrink: 0;">${icon}</span> <span style="flex-grow: 1; margin-right: 8px;">${message}</span><button type="button" class="toast-close-btn" aria-label="Fechar">&times;</button>`;
   container.appendChild(toast);
+
+  const closeBtn = toast.querySelector('.toast-close-btn');
+  if (closeBtn) {
+    closeBtn.onclick = () => {
+      toast.remove();
+    };
+  }
 
   // Auto-remove toast
   setTimeout(() => {
@@ -1321,6 +1328,10 @@ window.editExpense = function(id) {
   // Update button layouts
   document.getElementById('submit-expense-btn').textContent = 'Salvar Alterações';
   document.getElementById('cancel-edit-btn').classList.remove('hidden');
+  const clearFormBtn = document.getElementById('clear-form-btn');
+  if (clearFormBtn) {
+    clearFormBtn.classList.add('hidden');
+  }
 };
 
 // --------------------------------------------------------------------------
@@ -1604,6 +1615,14 @@ function setupForms() {
   cancelBtn.addEventListener('click', () => {
     resetExpenseForm();
   });
+
+  // Clear/Cancel form button click listener
+  const clearBtn = document.getElementById('clear-form-btn');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      resetExpenseForm();
+    });
+  }
 
   const tagsInput = document.getElementById('expense-tags');
   if (tagsInput) {
@@ -2053,6 +2072,10 @@ function resetExpenseForm() {
   // Reset buttons
   document.getElementById('submit-expense-btn').textContent = 'Salvar Lançamento';
   document.getElementById('cancel-edit-btn').classList.add('hidden');
+  const clearFormBtn = document.getElementById('clear-form-btn');
+  if (clearFormBtn) {
+    clearFormBtn.classList.remove('hidden');
+  }
 }
 
 // ==========================================================================
