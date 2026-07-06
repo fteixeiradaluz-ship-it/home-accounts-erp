@@ -10,7 +10,7 @@ const supabaseMock = {
       this.listeners.push(callback);
       const token = localStorage.getItem('home_accounts_token');
       if (token) {
-        fetch('/api/auth/user.js', {
+        fetch('/api/auth/user', {
           headers: { 'Authorization': `Bearer ${token}` }
         })
         .then(r => r.json())
@@ -32,7 +32,7 @@ const supabaseMock = {
       return { data: { subscription: { unsubscribe() {} } } };
     },
     async signUp({ email, password }) {
-      const res = await fetch('/api/auth/signup.js', {
+      const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -42,7 +42,7 @@ const supabaseMock = {
       return { data, error: null };
     },
     async signInWithPassword({ email, password }) {
-      const res = await fetch('/api/auth/login.js', {
+      const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -60,7 +60,7 @@ const supabaseMock = {
     },
     async updateUser({ password }) {
       const token = localStorage.getItem('home_accounts_token');
-      const res = await fetch('/api/auth/update-password.js', {
+      const res = await fetch('/api/auth/update-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -118,7 +118,7 @@ const supabaseMock = {
           if (tableName === 'user_settings') {
             if (this.updateData || this.insertData) {
               const body = this.updateData || this.insertData[0];
-              const res = await fetch('/api/settings.js', {
+              const res = await fetch('/api/settings', {
                 method: 'POST',
                 headers,
                 body: JSON.stringify(body)
@@ -127,7 +127,7 @@ const supabaseMock = {
               if (!res.ok) throw new Error(data.error);
               return { data: data.settings, error: null };
             } else {
-              const res = await fetch('/api/settings.js', { headers });
+              const res = await fetch('/api/settings', { headers });
               const data = await res.json();
               if (!res.ok) throw new Error(data.error);
               return { data: data.settings, error: null };
@@ -139,7 +139,7 @@ const supabaseMock = {
               return { error: null };
             }
             if (this.insertData) {
-              const res = await fetch('/api/templates.js', {
+              const res = await fetch('/api/templates', {
                 method: 'POST',
                 headers,
                 body: JSON.stringify({ templates: this.insertData })
@@ -148,7 +148,7 @@ const supabaseMock = {
               if (!res.ok) throw new Error(data.error);
               return { data: data.templates, error: null };
             }
-            const res = await fetch('/api/templates.js', { headers });
+            const res = await fetch('/api/templates', { headers });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
             return { data: data.templates, error: null };
@@ -160,7 +160,7 @@ const supabaseMock = {
             }
             if (this.updateData) {
               const id = this.filters.id;
-              const res = await fetch('/api/bills.js', {
+              const res = await fetch('/api/bills', {
                 method: 'POST',
                 headers,
                 body: JSON.stringify({ id, ...this.updateData })
@@ -170,7 +170,7 @@ const supabaseMock = {
               return { data: data.bill, error: null };
             }
             const monthKey = this.filters.month_key;
-            const res = await fetch(`/api/bills.js?monthKey=${monthKey}`, { headers });
+            const res = await fetch(`/api/bills?monthKey=${monthKey}`, { headers });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
             return { data: data.bills, error: null };
@@ -185,7 +185,7 @@ const supabaseMock = {
               } else {
                 body.id = this.filters.id;
               }
-              const res = await fetch('/api/transactions.js', {
+              const res = await fetch('/api/transactions', {
                 method: 'POST',
                 headers,
                 body: JSON.stringify(body)
@@ -195,7 +195,7 @@ const supabaseMock = {
               return { error: null };
             }
             if (this.insertData) {
-              const res = await fetch('/api/transactions.js', {
+              const res = await fetch('/api/transactions', {
                 method: 'POST',
                 headers,
                 body: JSON.stringify({ action: 'insert', expenses: this.insertData })
@@ -206,7 +206,7 @@ const supabaseMock = {
             }
             if (this.updateData) {
               const id = this.filters.id;
-              const res = await fetch('/api/transactions.js', {
+              const res = await fetch('/api/transactions', {
                 method: 'POST',
                 headers,
                 body: JSON.stringify({ action: 'update', id, ...this.updateData })
@@ -215,7 +215,7 @@ const supabaseMock = {
               if (!res.ok) throw new Error(data.error);
               return { error: null };
             }
-            const res = await fetch('/api/transactions.js', { headers });
+            const res = await fetch('/api/transactions', { headers });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
             return { data: data.expenses, error: null };
