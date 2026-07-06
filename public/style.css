@@ -425,7 +425,7 @@ body.light-mode .summary-card.daily-expense .card-header { color: hsl(280, 85%, 
 }
 
 .budget-bar-fill.normal {
-  background-color: var(--primary);
+  background-color: var(--success);
 }
 
 .budget-bar-fill.warning {
@@ -434,7 +434,19 @@ body.light-mode .summary-card.daily-expense .card-header { color: hsl(280, 85%, 
 
 .budget-bar-fill.danger {
   background-color: var(--danger);
-  box-shadow: 0 0 8px rgba(244, 67, 54, 0.4);
+  box-shadow: 0 0 10px var(--danger-glow);
+  animation: pulse-danger 1.5s infinite alternate ease-in-out;
+}
+
+@keyframes pulse-danger {
+  0% {
+    opacity: 0.8;
+    box-shadow: 0 0 4px var(--danger-glow);
+  }
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 12px var(--danger);
+  }
 }
 
 /* ==========================================================================
@@ -1054,6 +1066,41 @@ select {
 @keyframes pulseBanner {
   0% { box-shadow: 0 4px 12px rgba(244, 67, 54, 0.25); transform: scale(1); }
   100% { box-shadow: 0 4px 20px rgba(244, 67, 54, 0.5); transform: scale(1.01); }
+}
+
+/* Bills Warning Alert Banner */
+.bills-alert-banner {
+  background: linear-gradient(135deg, hsl(38, 92%, 52%), hsl(355, 84%, 58%));
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: white;
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all var(--transition-normal);
+  gap: 12px;
+}
+
+.bills-alert-banner .btn-alert-link {
+  background: white;
+  color: hsl(355, 84%, 40%);
+  border: none;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform var(--transition-fast);
+}
+
+.bills-alert-banner .btn-alert-link:hover {
+  transform: scale(1.05);
 }
 
 /* Login Page Overlay & Form */

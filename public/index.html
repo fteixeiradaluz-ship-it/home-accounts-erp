@@ -178,6 +178,7 @@
       <section id="dashboard-screen" class="app-screen active">
         <!-- Warning Banner for Income Limit -->
         <div id="income-alert-banner" class="income-alert-banner hidden"></div>
+        <div id="bills-alert-banner" class="bills-alert-banner hidden"></div>
 
         <!-- Dashboard Summary Cards -->
         <div class="summary-cards">
@@ -622,8 +623,14 @@
             </div>
             
             <h4 style="font-size: 0.8rem; font-weight: 600; margin-bottom: 8px; color: var(--text-primary);">Compras Parceladas Ativas:</h4>
-            <div id="active-installments-list" style="max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px; font-size: 0.75rem;">
+            <div id="active-installments-list" style="max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px; font-size: 0.75rem; margin-bottom: 16px;">
               <!-- Active installment items will be rendered here -->
+            </div>
+
+            <h4 style="font-size: 0.8rem; font-weight: 600; margin-top: 16px; margin-bottom: 8px; color: var(--text-primary);">🔮 Previsão de Saldo dos Próximos Meses:</h4>
+            <p class="card-desc" style="margin-bottom: 8px;">Projeção do saldo livre estimado (Receita Fixa - Contas Fixas - Parcelas de Cartão).</p>
+            <div id="balance-forecast-list" style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px; font-size: 0.75rem;">
+              <!-- Dynamic balance forecast will be rendered here -->
             </div>
           </div>
         </div>

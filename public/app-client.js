@@ -881,6 +881,106 @@ function setupTabs() {
   }
 }
 
+window.switchTab = function(targetTabId) {
+  const navButtons = document.querySelectorAll('.nav-btn');
+  const screens = document.querySelectorAll('.app-screen');
+  
+  navButtons.forEach(b => {
+    if (b.getAttribute('data-tab') === targetTabId) {
+      b.classList.add('active');
+    } else {
+      b.classList.remove('active');
+    }
+  });
+
+  screens.forEach(screen => {
+    if (screen.id === targetTabId) {
+      screen.classList.add('active');
+    } else {
+      screen.classList.remove('active');
+    }
+  });
+
+  if (targetTabId === 'dashboard-screen') {
+    setTimeout(renderCharts, 100);
+  }
+  
+  if (targetTabId === 'daily-screen') {
+    const today = new Date().toISOString().substring(0, 10);
+    const dateInput = document.getElementById('expense-date');
+    if (dateInput) dateInput.value = today;
+  }
+};
+
+window.checkPendingBillsAndNotify = function() {
+  const activeMonth = state.currentMonth;
+  const bills = state.fixedBills[activeMonth] || [];
+  if (bills.length === 0) return;
+
+  const today = new Date();
+  const todayDay = today.getDate();
+  const [yearStr, monthStr] = activeMonth.split('-');
+  const currYear = parseInt(yearStr);
+  const currMonth = parseInt(monthStr);
+  
+  const calendarTodayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  
+  let overdueCount = 0;
+  let upcomingCount = 0;
+
+  bills.forEach(bill => {
+    if (!bill.paid) {
+      const dueDay = parseInt(bill.dueDate) || 0;
+      if (activeMonth < calendarTodayStr) {
+        overdueCount++;
+      } else if (activeMonth === calendarTodayStr) {
+        if (dueDay < todayDay) {
+          overdueCount++;
+        } else if (dueDay >= todayDay && dueDay <= todayDay + 3) {
+          upcomingCount++;
+        }
+      }
+    }
+  });
+
+  const banner = document.getElementById('bills-alert-banner');
+  if (banner) {
+    if (overdueCount > 0 || upcomingCount > 0) {
+      let message = `⚠️ Você tem <strong>${overdueCount + upcomingCount} conta(s) pendente(s)</strong>: `;
+      if (overdueCount > 0 && upcomingCount > 0) {
+        message += `${overdueCount} vencida(s) e ${upcomingCount} vencendo em breve.`;
+      } else if (overdueCount > 0) {
+        message += `${overdueCount} vencida(s).`;
+      } else {
+        message += `${upcomingCount} vencendo nos próximos 3 dias.`;
+      }
+      banner.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span>${message}</span>
+        </div>
+        <button class="btn-alert-link" onclick="switchTab('fixed-screen')">Ver Contas</button>
+      `;
+      banner.classList.remove('hidden');
+
+      const lastNotify = sessionStorage.getItem('last_bill_notification');
+      const now = Date.now();
+      if (Notification.permission === 'granted' && (!lastNotify || now - parseInt(lastNotify) > 1800000)) {
+        try {
+          new Notification("Contas Pendentes - Finanças ERP", {
+            body: `Você tem ${overdueCount + upcomingCount} conta(s) pendente(s). ${overdueCount} já vencida(s).`,
+            icon: '/icon.png'
+          });
+          sessionStorage.setItem('last_bill_notification', now.toString());
+        } catch (e) {
+          console.warn("Falha ao disparar Notification:", e);
+        }
+      }
+    } else {
+      banner.classList.add('hidden');
+    }
+  }
+};
+
 // ==========================================================================
 // MONTH SLIDER
 // ==========================================================================
@@ -940,6 +1040,9 @@ function updateUI() {
   // Render sub-components
   renderDashboardStats();
   renderFixedBills();
+  if (typeof window.checkPendingBillsAndNotify === 'function') {
+    window.checkPendingBillsAndNotify();
+  }
   populateCardDropdowns();
   renderTags();
   renderDailyExpenses();
@@ -1138,9 +1241,9 @@ function renderBudgetLimitsDashboard() {
     const percentage = Math.round((totalSpent / limit) * 100) || 0;
     
     let statusClass = 'normal';
-    if (percentage >= 80 && percentage < 100) {
+    if (percentage >= 70 && percentage < 90) {
       statusClass = 'warning';
-    } else if (percentage >= 100) {
+    } else if (percentage >= 90) {
       statusClass = 'danger';
     }
 
@@ -3077,6 +3180,37 @@ function renderInstallmentProjections() {
   if (!hasActive) {
     activeList.innerHTML = '<div class="empty-state" style="padding: 10px 0; font-size: 0.75rem;">Nenhuma compra parcelada ativa para este mês ou futuros.</div>';
   }
+  
+  // Renderizar a Previsão de Saldo Futuro (Receita - Contas Fixas Estimadas - Parcelas)
+  const forecastList = document.getElementById('balance-forecast-list');
+  if (forecastList) {
+    forecastList.innerHTML = '';
+    const income = (parseFloat(state.salaryFabricio) || 0) + (parseFloat(state.salaryPatricia) || 0) + (parseFloat(state.extraIncome) || 0);
+    const fixedBillsEstimate = (state.fixedBillsTemplate || []).reduce((sum, t) => sum + (parseFloat(t.value) || 0), 0);
+
+    projections.forEach(proj => {
+      const totalEstExpenses = fixedBillsEstimate + proj.total;
+      const forecastedBalance = income - totalEstExpenses;
+      const monthLabel = `${monthsShort[proj.month - 1]}/${String(proj.year).substring(2)}`;
+      
+      const itemHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background-color: rgba(255, 255, 255, 0.015); margin-bottom: 6px;">
+          <div style="width: 55px; font-weight: 600; color: var(--text-primary); font-size: 0.75rem;">${monthLabel}</div>
+          <div style="flex: 1; display: flex; justify-content: space-around; font-size: 0.65rem; color: var(--text-secondary); margin: 0 8px; gap: 4px;">
+            <span>Rec: <b style="color: var(--success);">${formatCurrency(income)}</b></span>
+            <span>Contas: <b style="color: var(--text-muted);">${formatCurrency(fixedBillsEstimate)}</b></span>
+            <span>Parc: <b style="color: var(--danger);">${formatCurrency(proj.total)}</b></span>
+          </div>
+          <div style="text-align: right; width: 85px; flex-shrink: 0;">
+            <strong style="color: ${forecastedBalance >= 0 ? 'var(--success)' : 'var(--danger)'}; font-size: 0.75rem;">
+              ${formatCurrency(forecastedBalance)}
+            </strong>
+          </div>
+        </div>
+      `;
+      forecastList.insertAdjacentHTML('beforeend', itemHTML);
+    });
+  }
 }
 
 window.deleteInstallmentGroup = async function(groupId, desc) {
@@ -4821,4 +4955,10 @@ function setupOnlineSync() {
   }
 }
 
-
+// Solicitar permissão de notificação se suportado e ainda não configurado
+if ('Notification' in window && Notification.permission === 'default') {
+  window.addEventListener('click', function askPermissionOnce() {
+    Notification.requestPermission();
+    window.removeEventListener('click', askPermissionOnce);
+  }, { once: true });
+}
