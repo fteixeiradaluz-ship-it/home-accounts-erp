@@ -92,8 +92,10 @@ export default async (req, res) => {
           return res.status(400).json({ error: 'ID do lançamento é obrigatório para deleção.' });
         }
 
+        const idFilter = Array.isArray(id) ? { in: id } : id;
+
         await prisma.dailyExpense.deleteMany({
-          where: { id, userId }
+          where: { id: idFilter, userId }
         });
 
         return res.status(200).json({ message: 'Lançamento excluído com sucesso!' });

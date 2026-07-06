@@ -266,6 +266,9 @@
           </div>
           
           <div id="division-content" class="hidden" style="margin-top: 12px; border-top: 1px dashed var(--border-color); padding-top: 12px;">
+            <div style="background-color: rgba(58, 134, 255, 0.08); border-left: 3px solid var(--primary); padding: 10px 12px; font-size: 0.72rem; border-radius: var(--radius-sm); margin-bottom: 12px; color: var(--text-secondary); line-height: 1.4;">
+              💡 <strong>Como funciona a Divisão Proporcional:</strong> Esta seção divide as contas compartilhadas proporcionalmente aos salários de cada um (definidos nas Configurações). Quem ganha mais paga uma parcela proporcionalmente maior. O sistema analisa quem pagou cada despesa baseando-se no Cartão/PIX utilizado (Nubank, Inter e Itaú são assumidos para Fabrício; Santander e Bradesco para Patrícia; Dinheiro/PIX é dividido meio a meio) e mostra o acerto final necessário para equilibrar as contas.
+            </div>
             <div class="division-summary" style="display: flex; flex-direction: column; gap: 8px;">
               <div class="division-ratio-bar-wrapper">
                 <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px;">
@@ -322,6 +325,9 @@
           </div>
           
           <div id="simulator-content" class="hidden" style="margin-top: 12px; border-top: 1px dashed var(--border-color); padding-top: 12px;">
+            <div style="background-color: rgba(58, 134, 255, 0.08); border-left: 3px solid var(--primary); padding: 10px 12px; font-size: 0.72rem; border-radius: var(--radius-sm); margin-bottom: 12px; color: var(--text-secondary); line-height: 1.4;">
+              💡 <strong>Como funciona o Simulador:</strong> Esta ferramenta permite projetar o impacto de uma compra parcelada nos limites de orçamento mensais antes de de fato realizá-la. O sistema simulará a divisão do valor em parcelas mensais a partir do mês escolhido, atualizando os gráficos e o progresso do orçamento para você avaliar se a compra cabe nas metas estabelecidas.
+            </div>
             <form id="simulator-form">
               <div class="form-row-2">
                 <div class="form-group">
@@ -544,6 +550,10 @@
           <div id="import-content" class="hidden" style="margin-top: 12px; border-top: 1px dashed var(--border-color); padding-top: 12px;">
             <p class="card-desc">Carregue um arquivo <strong>OFX</strong> ou <strong>CSV</strong>. Os gastos serão extraídos e você poderá escolher quais importar.</p>
             
+            <div style="background-color: rgba(58, 134, 255, 0.08); border-left: 3px solid var(--primary); padding: 10px 12px; font-size: 0.72rem; border-radius: var(--radius-sm); margin-bottom: 12px; color: var(--text-secondary); line-height: 1.4;">
+              💡 <strong>Como funciona a Importação:</strong> Ao carregar o arquivo, o sistema lista apenas os gastos (valores de débito). Você pode filtrar, alterar a data, descrição e valor individualmente, aplicar categorias e cartões em lote e desmarcar o que não desejar incluir. Ao confirmar, o ERP procurará duplicatas comparando com transações existentes de mesmo valor; se houver conflitos, você poderá escolher individualmente como deseja tratá-los.
+            </div>
+
             <div class="import-drop-zone" id="import-drop-zone" style="border: 2px dashed var(--border-color); border-radius: var(--radius-sm); padding: 24px; text-align: center; cursor: pointer; transition: all 0.2s ease;">
               <span style="font-size: 0.85rem; color: var(--text-secondary);">📂 Clique para selecionar ou arraste o extrato aqui</span>
               <input type="file" id="import-statement-file" accept=".ofx,.csv" style="display: none;">

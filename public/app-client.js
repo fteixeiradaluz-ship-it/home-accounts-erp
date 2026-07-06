@@ -92,6 +92,10 @@ const supabaseMock = {
         this.filters[field] = value;
         return this;
       },
+      in(field, values) {
+        this.filters[field] = values;
+        return this;
+      },
       maybeSingle() {
         return this.execute();
       },
