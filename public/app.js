@@ -4042,8 +4042,32 @@ function setupImportStatement() {
           specify: ''
         }));
 
+      const invertCheckbox = document.getElementById('import-invert-values');
+      let shouldInvert = invertCheckbox ? invertCheckbox.checked : false;
+
+      // Auto-detecção de extrato de cartão (valores positivos):
+      // Se não houver despesas negativas mas houver valores positivos no arquivo, assumimos como extrato de cartão de crédito.
+      const hasNegative = rawTxs.some(t => t.amount < 0);
+      const hasPositive = rawTxs.some(t => t.amount > 0);
+      if (!hasNegative && hasPositive) {
+        shouldInvert = true;
+        if (invertCheckbox) invertCheckbox.checked = true;
+      }
+
+      parsedTransactions = rawTxs
+        .filter(t => shouldInvert ? t.amount > 0 : t.amount < 0)
+        .map((t, idx) => ({
+          id: `imp_${Date.now()}_${idx}`,
+          date: t.date,
+          desc: t.desc,
+          amount: Math.abs(t.amount),
+          category: autoCategorize(t.desc),
+          card: state.cards[0] || 'Cartão Principal',
+          specify: ''
+        }));
+
       if (parsedTransactions.length === 0) {
-        alert('Nenhuma despesa (valor negativo) foi encontrada no arquivo.');
+        alert('Nenhuma despesa foi encontrada no arquivo com as configurações atuais.');
         return;
       }
 
