@@ -127,11 +127,12 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // Arquivos estáticos
+  // Arquivos estáticos (servidos a partir da pasta public)
+  const publicDir = path.join(__dirname, 'public');
   let filePath = pathname === '/' ? '/index.html' : pathname;
-  filePath = path.join(__dirname, filePath);
+  filePath = path.join(publicDir, filePath);
 
-  if (!filePath.startsWith(__dirname)) {
+  if (!filePath.startsWith(publicDir)) {
     res.statusCode = 403;
     res.end('Access Denied');
     return;
