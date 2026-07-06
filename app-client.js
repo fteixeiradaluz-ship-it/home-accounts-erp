@@ -2,12 +2,240 @@
    PERSONAL FINANCE ERP - APPLICATION ENGINE (JAVASCRIPT)
    ========================================================================== */
 
-// Supabase Configuration - REPLACE WITH YOUR CREDENTIALS
-const SUPABASE_URL = 'https://ligullqdxbhirorwfshk.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxpZ3VsbHFkeGJoaXJvcndmc2hrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2ODAzMDYsImV4cCI6MjA5NjI1NjMwNn0.2jNBrbhsTT6P6gjRadXQNlLT4AKnr5sKFnYlG3EUCAI';
+// Local Serverless API (Neon) Configuration
+const supabaseMock = {
+  auth: {
+    listeners: [],
+    onAuthStateChange(callback) {
+      this.listeners.push(callback);
+      const token = localStorage.getItem('home_accounts_token');
+      if (token) {
+        fetch('/api/auth/user.js', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(r => r.json())
+        .then(data => {
+          if (data.user) {
+            callback('SIGNED_IN', { user: data.user, token });
+          } else {
+            localStorage.removeItem('home_accounts_token');
+            callback('SIGNED_OUT', null);
+          }
+        })
+        .catch(() => {
+          localStorage.removeItem('home_accounts_token');
+          callback('SIGNED_OUT', null);
+        });
+      } else {
+        setTimeout(() => callback('SIGNED_OUT', null), 0);
+      }
+      return { data: { subscription: { unsubscribe() {} } } };
+    },
+    async signUp({ email, password }) {
+      const res = await fetch('/api/auth/signup.js', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erro no cadastro');
+      return { data, error: null };
+    },
+    async signInWithPassword({ email, password }) {
+      const res = await fetch('/api/auth/login.js', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erro no login');
+      localStorage.setItem('home_accounts_token', data.token);
+      this.listeners.forEach(cb => cb('SIGNED_IN', { user: data.user, token: data.token }));
+      return { data, error: null };
+    },
+    async signOut() {
+      localStorage.removeItem('home_accounts_token');
+      this.listeners.forEach(cb => cb('SIGNED_OUT', null));
+      return { error: null };
+    },
+    async updateUser({ password }) {
+      const token = localStorage.getItem('home_accounts_token');
+      const res = await fetch('/api/auth/update-password.js', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ password })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erro ao atualizar senha');
+      return { data, error: null };
+    },
+    async resetPasswordForEmail(email, options) {
+      return { error: new Error('Recuperação de senha via e-mail não disponível neste servidor Neon. Entre em contato com o suporte ou altere direto no banco.') };
+    }
+  },
+  from(tableName) {
+    const token = localStorage.getItem('home_accounts_token');
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    };
 
-// Initialize Supabase Client
-var supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+    const builder = {
+      filters: {},
+      updateData: null,
+      insertData: null,
+      isDelete: false,
+      eq(field, value) {
+        this.filters[field] = value;
+        return this;
+      },
+      maybeSingle() {
+        return this.execute();
+      },
+      single() {
+        return this.execute();
+      },
+      select() {
+        return this;
+      },
+      update(data) {
+        this.updateData = data;
+        return this;
+      },
+      insert(data) {
+        this.insertData = data;
+        return this;
+      },
+      delete() {
+        this.isDelete = true;
+        return this;
+      },
+      async execute() {
+        try {
+          if (tableName === 'user_settings') {
+            if (this.updateData || this.insertData) {
+              const body = this.updateData || this.insertData[0];
+              const res = await fetch('/api/settings.js', {
+                method: 'POST',
+                headers,
+                body: JSON.stringify(body)
+              });
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error);
+              return { data: data.settings, error: null };
+            } else {
+              const res = await fetch('/api/settings.js', { headers });
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error);
+              return { data: data.settings, error: null };
+            }
+          }
+
+          if (tableName === 'fixed_bills_templates') {
+            if (this.isDelete) {
+              return { error: null };
+            }
+            if (this.insertData) {
+              const res = await fetch('/api/templates.js', {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ templates: this.insertData })
+              });
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error);
+              return { data: data.templates, error: null };
+            }
+            const res = await fetch('/api/templates.js', { headers });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            return { data: data.templates, error: null };
+          }
+
+          if (tableName === 'fixed_bills') {
+            if (this.insertData) {
+              return { data: this.insertData, error: null };
+            }
+            if (this.updateData) {
+              const id = this.filters.id;
+              const res = await fetch('/api/bills.js', {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ id, ...this.updateData })
+              });
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error);
+              return { data: data.bill, error: null };
+            }
+            const monthKey = this.filters.month_key;
+            const res = await fetch(`/api/bills.js?monthKey=${monthKey}`, { headers });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            return { data: data.bills, error: null };
+          }
+
+          if (tableName === 'daily_expenses') {
+            if (this.isDelete) {
+              const body = { action: 'delete' };
+              if (this.filters.installment_group_id) {
+                body.action = 'deleteGroup';
+                body.installmentGroupId = this.filters.installment_group_id;
+              } else {
+                body.id = this.filters.id;
+              }
+              const res = await fetch('/api/transactions.js', {
+                method: 'POST',
+                headers,
+                body: JSON.stringify(body)
+              });
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error);
+              return { error: null };
+            }
+            if (this.insertData) {
+              const res = await fetch('/api/transactions.js', {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ action: 'insert', expenses: this.insertData })
+              });
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error);
+              return { error: null };
+            }
+            if (this.updateData) {
+              const id = this.filters.id;
+              const res = await fetch('/api/transactions.js', {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ action: 'update', id, ...this.updateData })
+              });
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error);
+              return { error: null };
+            }
+            const res = await fetch('/api/transactions.js', { headers });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            return { data: data.expenses, error: null };
+          }
+        } catch (err) {
+          console.error(`Error executing mock query on table ${tableName}:`, err);
+          return { data: null, error: err };
+        }
+      }
+    };
+
+    builder.then = function(onFulfilled, onRejected) {
+      return this.execute().then(onFulfilled, onRejected);
+    };
+
+    return builder;
+  }
+};
+var supabase = supabaseMock;
+
 
 // Global logged in user state
 let loggedInUserId = null;
@@ -2602,18 +2830,25 @@ function setupBackupActions() {
 
   // 4. Logout / Lock App Action
   const logoutBtn = document.getElementById('logout-app-btn');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', async () => {
-      if (await showConfirmModal('Deseja realmente sair e bloquear o acesso ao ERP?', { title: 'Sair do ERP' })) {
-        try {
-          if (supabase) await supabase.auth.signOut();
-        } catch (err) {
-          console.error('Erro ao efetuar logout no Supabase:', err);
-        }
-        sessionStorage.removeItem('erp_authenticated');
-        window.location.reload();
+  const headerLogoutBtn = document.getElementById('header-logout-btn');
+
+  const handleLogout = async () => {
+    if (await showConfirmModal('Deseja realmente sair e bloquear o acesso ao ERP?', { title: 'Sair do ERP' })) {
+      try {
+        if (supabase) await supabase.auth.signOut();
+      } catch (err) {
+        console.error('Erro ao efetuar logout:', err);
       }
-    });
+      sessionStorage.removeItem('erp_authenticated');
+      window.location.reload();
+    }
+  };
+
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', handleLogout);
+  }
+  if (headerLogoutBtn) {
+    headerLogoutBtn.addEventListener('click', handleLogout);
   }
 }
 

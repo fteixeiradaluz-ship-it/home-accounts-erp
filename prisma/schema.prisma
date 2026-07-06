@@ -1,0 +1,92 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+model HomeUser {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  settings  UserSettings?
+  templates FixedBillTemplate[]
+  bills     FixedBill[]
+  expenses  DailyExpense[]
+
+  @@map("home_users")
+}
+
+model UserSettings {
+  id                String   @id @default(cuid())
+  userId            String   @unique @map("user_id")
+  user              HomeUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  salaryFabricio    Float    @default(4000.0) @map("salary_fabricio")
+  salaryPatricia    Float    @default(2500.0) @map("salary_patricia")
+  extraIncome       Float    @default(0.0) @map("extra_income")
+  cards             Json     // Array of strings
+  savingsGoalType   String   @default("percentage") @map("savings_goal_type")
+  savingsGoalValue  Float    @default(15.0) @map("savings_goal_value")
+  budgetLimits      Json     @map("budget_limits")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("user_settings")
+}
+
+model FixedBillTemplate {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  user      HomeUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  value     Float
+  dueDate   String   @map("due_date")
+  card      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("fixed_bills_templates")
+}
+
+model FixedBill {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  user      HomeUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  monthKey  String   @map("month_key")
+  name      String
+  value     Float
+  dueDate   String   @map("due_date")
+  card      String
+  paid      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("fixed_bills")
+}
+
+model DailyExpense {
+  id                 String   @id @default(cuid())
+  userId             String   @map("user_id")
+  user               HomeUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount             Float
+  date               String
+  desc               String
+  category           String
+  card               String
+  specify            String?
+  installmentGroupId String?  @map("installment_group_id")
+  installmentIndex   Int?     @map("installment_index")
+  installmentCount   Int?     @map("installment_count")
+  tags               Json     // Array of strings
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("daily_expenses")
+}

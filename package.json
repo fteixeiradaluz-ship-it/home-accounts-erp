@@ -1,0 +1,29 @@
+{
+  "name": "home-accounts-erp",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "Domestic Finance ERP with Vercel Serverless and Neon Postgres",
+  "scripts": {
+    "dev": "node local-server.js",
+    "build": "prisma generate",
+    "postinstall": "prisma generate",
+    "db:push": "prisma db push",
+    "db:seed": "prisma db seed",
+    "set-password": "node scripts/change-password.js"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "@prisma/adapter-neon": "^7.8.0",
+    "@prisma/client": "^6.2.1",
+    "bcryptjs": "^3.0.3",
+    "jose": "^6.2.2",
+    "ws": "^8.21.0"
+  },
+  "devDependencies": {
+    "prisma": "^6.2.1"
+  }
+}
