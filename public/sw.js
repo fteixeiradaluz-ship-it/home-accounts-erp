@@ -1,9 +1,10 @@
-const CACHE_NAME = 'financas-erp-v1';
+const CACHE_NAME = 'financas-erp-v2';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './app-client.js',
+  './app.js',
   './manifest.json',
   './icon.png',
   'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap',
