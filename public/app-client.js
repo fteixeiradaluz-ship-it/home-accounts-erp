@@ -2935,7 +2935,7 @@ function setupBackupActions() {
   const logoutBtn = document.getElementById('logout-app-btn');
   const headerLogoutBtn = document.getElementById('header-logout-btn');
 
-  const handleLogout = async () => {
+  window.handleLogout = async () => {
     if (await showConfirmModal('Deseja realmente sair e bloquear o acesso ao ERP?', { title: 'Sair do ERP' })) {
       try {
         if (supabase) await supabase.auth.signOut();
@@ -2948,10 +2948,10 @@ function setupBackupActions() {
   };
 
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', handleLogout);
+    logoutBtn.addEventListener('click', window.handleLogout);
   }
   if (headerLogoutBtn) {
-    headerLogoutBtn.addEventListener('click', handleLogout);
+    headerLogoutBtn.addEventListener('click', window.handleLogout);
   }
 }
 
