@@ -4140,25 +4140,25 @@ function setupImportStatement() {
 
       const rowHTML = `
         <tr id="row_${tx.id}">
-          <td style="padding: 8px; text-align: center; border-bottom: 1px solid var(--border-color);">
+          <td data-label="Selecionar" style="padding: 8px; text-align: center; border-bottom: 1px solid var(--border-color);">
             <input type="checkbox" class="import-row-checkbox" checked data-id="${tx.id}" onchange="updateImportCount()">
           </td>
-          <td style="padding: 8px; border-bottom: 1px solid var(--border-color); white-space: nowrap;">
+          <td data-label="Data" style="padding: 8px; border-bottom: 1px solid var(--border-color); white-space: nowrap;">
             <input type="date" value="${tx.date}" style="padding:2px 4px; font-size:0.75rem;" onchange="updateImportTxData('${tx.id}', 'date', this.value)">
           </td>
-          <td style="padding: 8px; border-bottom: 1px solid var(--border-color);">
+          <td data-label="Descrição" style="padding: 8px; border-bottom: 1px solid var(--border-color);">
             <input type="text" value="${tx.desc}" style="padding:2px 4px; font-size:0.75rem;" onchange="updateImportTxData('${tx.id}', 'desc', this.value)">
           </td>
-          <td style="padding: 8px; border-bottom: 1px solid var(--border-color); font-weight: bold; color: var(--danger);">
+          <td data-label="Valor" style="padding: 8px; border-bottom: 1px solid var(--border-color); font-weight: bold; color: var(--danger);">
             R$ <input type="number" step="0.01" value="${tx.amount.toFixed(2)}" style="padding:2px 4px; font-size:0.75rem; width: 60px; text-align:right;" onchange="updateImportTxData('${tx.id}', 'amount', this.value)">
           </td>
-          <td style="padding: 8px; border-bottom: 1px solid var(--border-color);">
+          <td data-label="Categoria" style="padding: 8px; border-bottom: 1px solid var(--border-color);">
             <select style="padding:2px 4px; font-size:0.75rem; width: 100%;" onchange="onImportCategoryChange('${tx.id}', this.value)">
               ${catOptions}
             </select>
             <input type="text" id="specify_input_${tx.id}" placeholder="Especificar..." value="${tx.specify || ''}" class="import-specify-input ${tx.category === 'Outros' ? '' : 'hidden'}" style="padding:2px 4px; font-size:0.7rem; width: 100%; margin-top: 4px;" onchange="updateImportTxData('${tx.id}', 'specify', this.value)">
           </td>
-          <td style="padding: 8px; border-bottom: 1px solid var(--border-color);">
+          <td data-label="Cartão" style="padding: 8px; border-bottom: 1px solid var(--border-color);">
             <select style="padding:2px 4px; font-size:0.75rem;" onchange="updateImportTxData('${tx.id}', 'card', this.value)">
               ${cardOptions}
             </select>

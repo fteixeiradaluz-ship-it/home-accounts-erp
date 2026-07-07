@@ -425,7 +425,7 @@ body.light-mode .summary-card.daily-expense .card-header { color: hsl(280, 85%, 
 }
 
 .budget-bar-fill.normal {
-  background-color: var(--success);
+  background-color: var(--primary);
 }
 
 .budget-bar-fill.warning {
@@ -434,19 +434,7 @@ body.light-mode .summary-card.daily-expense .card-header { color: hsl(280, 85%, 
 
 .budget-bar-fill.danger {
   background-color: var(--danger);
-  box-shadow: 0 0 10px var(--danger-glow);
-  animation: pulse-danger 1.5s infinite alternate ease-in-out;
-}
-
-@keyframes pulse-danger {
-  0% {
-    opacity: 0.8;
-    box-shadow: 0 0 4px var(--danger-glow);
-  }
-  100% {
-    opacity: 1;
-    box-shadow: 0 0 12px var(--danger);
-  }
+  box-shadow: 0 0 8px rgba(244, 67, 54, 0.4);
 }
 
 /* ==========================================================================
@@ -1066,41 +1054,6 @@ select {
 @keyframes pulseBanner {
   0% { box-shadow: 0 4px 12px rgba(244, 67, 54, 0.25); transform: scale(1); }
   100% { box-shadow: 0 4px 20px rgba(244, 67, 54, 0.5); transform: scale(1.01); }
-}
-
-/* Bills Warning Alert Banner */
-.bills-alert-banner {
-  background: linear-gradient(135deg, hsl(38, 92%, 52%), hsl(355, 84%, 58%));
-  border-radius: var(--radius-md);
-  padding: 12px 16px;
-  margin-bottom: 12px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: white;
-  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.25);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all var(--transition-normal);
-  gap: 12px;
-}
-
-.bills-alert-banner .btn-alert-link {
-  background: white;
-  color: hsl(355, 84%, 40%);
-  border: none;
-  padding: 6px 12px;
-  border-radius: var(--radius-sm);
-  font-size: 0.75rem;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: transform var(--transition-fast);
-}
-
-.bills-alert-banner .btn-alert-link:hover {
-  transform: scale(1.05);
 }
 
 /* Login Page Overlay & Form */
@@ -2069,149 +2022,6 @@ body.light-mode .bulk-controls-wrapper {
     transform: scale(1.8);
     opacity: 0;
   }
-}
-
-/* ==========================================================================
-   TOAST NOTIFICATION SYSTEM
-   ========================================================================== */
-.toast-container {
-  position: fixed;
-  bottom: 80px; /* Stay above mobile bottom navigation bar */
-  left: 50%;
-  transform: translateX(-50%);
-  width: 90%;
-  max-width: 400px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  z-index: 9999;
-  pointer-events: none;
-}
-
-.toast {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  padding: 12px 16px;
-  color: var(--text-primary);
-  font-size: 0.85rem;
-  font-weight: 500;
-  box-shadow: var(--shadow-lg);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  opacity: 0;
-  transform: translateY(20px);
-  animation: toastIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  pointer-events: auto;
-  border-left: 4px solid var(--primary);
-  transition: opacity 0.3s, transform 0.3s;
-}
-
-.toast.success { border-left-color: var(--success); }
-.toast.warning { border-left-color: var(--warning); }
-.toast.danger { border-left-color: var(--danger); }
-
-.toast-close-btn {
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: 1.2rem;
-  font-weight: bold;
-  padding: 0 4px;
-  margin-left: auto;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color var(--transition-fast);
-  line-height: 1;
-}
-
-.toast-close-btn:hover {
-  color: var(--text-primary);
-}
-
-.toast.fade-out {
-  opacity: 0;
-  transform: translateY(-20px);
-}
-
-@keyframes toastIn {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* ==========================================================================
-   CONFIRM MODAL & GLASSMORPHISM
-   ========================================================================== */
-.modal-overlay {
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  background-color: rgba(0, 0, 0, 0.6) !important;
-}
-
-.modal-card {
-  border: 1px solid var(--border-color);
-  background: var(--gradient-card);
-  box-shadow: var(--shadow-lg);
-  border-radius: var(--radius-lg);
-}
-
-/* ==========================================================================
-   CUSTOM CATEGORIZATION RULES IN SETTINGS
-   ========================================================================== */
-.custom-rule-row {
-  display: grid;
-  grid-template-columns: 1.2fr 1fr auto;
-  gap: 8px;
-  align-items: center;
-  background-color: rgba(255, 255, 255, 0.01);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  padding: 8px;
-}
-
-body.light-mode .custom-rule-row {
-  background-color: rgba(0, 0, 0, 0.015);
-}
-
-.btn-delete-rule {
-  background: none;
-  border: none;
-  font-size: 1.1rem;
-  color: var(--danger);
-  cursor: pointer;
-  padding: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition: background var(--transition-fast);
-}
-
-.btn-delete-rule:hover {
-  background-color: var(--danger-glow);
-}
-
-/* Trash delete button for active installments */
-.btn-delete-installment-group {
-  background: none;
-  border: none;
-  font-size: 1.1rem;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 4px;
-  transition: all var(--transition-fast);
-}
-
-.btn-delete-installment-group:hover {
-  color: var(--danger);
-  background-color: var(--danger-glow);
 }
 
 
