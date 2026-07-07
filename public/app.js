@@ -87,6 +87,7 @@ const supabaseMock = {
       filters: {},
       updateData: null,
       insertData: null,
+      upsertData: null,
       isDelete: false,
       eq(field, value) {
         this.filters[field] = value;
@@ -113,6 +114,10 @@ const supabaseMock = {
         this.insertData = data;
         return this;
       },
+      upsert(data) {
+        this.upsertData = data;
+        return this;
+      },
       delete() {
         this.isDelete = true;
         return this;
@@ -120,8 +125,8 @@ const supabaseMock = {
       async execute() {
         try {
           if (tableName === 'user_settings') {
-            if (this.updateData || this.insertData) {
-              const body = this.updateData || this.insertData[0];
+            if (this.updateData || this.insertData || this.upsertData) {
+              const body = this.updateData || this.upsertData || (this.insertData && this.insertData[0]);
               const res = await fetch('/api/settings', {
                 method: 'POST',
                 headers,
@@ -4026,7 +4031,7 @@ function setupImportStatement() {
       } else if (ext === 'csv') {
         rawTxs = parseCSV(text);
       } else {
-        alert('Formato de arquivo não suportado. Use apenas OFX ou CSV.');
+        showToast('Formato de arquivo não suportado. Use apenas OFX ou CSV.', 'danger');
         return;
       }
 
@@ -4067,10 +4072,11 @@ function setupImportStatement() {
         }));
 
       if (parsedTransactions.length === 0) {
-        alert('Nenhuma despesa foi encontrada no arquivo com as configurações atuais.');
+        showToast('Nenhuma despesa foi encontrada no arquivo com as configurações atuais.', 'warning');
         return;
       }
 
+      showToast(`Arquivo "${file.name}" carregado com sucesso! ${parsedTransactions.length} transações encontradas para conciliação.`, 'success');
       renderReconciliationTable();
     };
     reader.readAsText(file);
@@ -4160,13 +4166,13 @@ function setupImportStatement() {
     const select = document.getElementById('bulk-category-select');
     const category = select ? select.value : '';
     if (!category) {
-      alert('Selecione uma categoria para aplicar em lote.');
+      showToast('Selecione uma categoria para aplicar em lote.', 'warning');
       return;
     }
     
     const checkedBoxes = document.querySelectorAll('.import-row-checkbox:checked');
     if (checkedBoxes.length === 0) {
-      alert('Nenhuma transação selecionada.');
+      showToast('Nenhuma transação selecionada.', 'warning');
       return;
     }
     
@@ -4199,13 +4205,13 @@ function setupImportStatement() {
     const select = document.getElementById('bulk-card-select');
     const card = select ? select.value : '';
     if (!card) {
-      alert('Selecione um cartão para aplicar em lote.');
+      showToast('Selecione um cartão para aplicar em lote.', 'warning');
       return;
     }
     
     const checkedBoxes = document.querySelectorAll('.import-row-checkbox:checked');
     if (checkedBoxes.length === 0) {
-      alert('Nenhuma transação selecionada.');
+      showToast('Nenhuma transação selecionada.', 'warning');
       return;
     }
     
@@ -4264,12 +4270,12 @@ function setupImportStatement() {
   confirmBtn.addEventListener('click', async () => {
     const checkedBoxes = document.querySelectorAll('.import-row-checkbox:checked');
     if (checkedBoxes.length === 0) {
-      alert('Nenhuma transação selecionada para importação.');
+      showToast('Nenhuma transação selecionada para importação.', 'warning');
       return;
     }
 
     if (!loggedInUserId) {
-      alert('Você precisa estar logado para realizar a importação.');
+      showToast('Você precisa estar logado para realizar a importação.', 'warning');
       return;
     }
 
@@ -4358,7 +4364,7 @@ function setupImportStatement() {
 
   async function saveImportedTransactions(toImport, toDeleteIds) {
     if (toImport.length === 0 && toDeleteIds.length === 0) {
-      alert('Nenhuma transação importada ou alterada.');
+      showToast('Nenhuma transação importada ou alterada.', 'warning');
       resetImport();
       return;
     }
@@ -4426,11 +4432,11 @@ function setupImportStatement() {
       if (toDeleteIds.length > 0) {
         msg += `${toDeleteIds.length} lançamentos duplicados removidos. `;
       }
-      alert(msg + 'Sincronizado com sucesso!');
+      showToast(msg + 'Sincronizado com sucesso!', 'success');
       resetImport();
     } catch (err) {
       console.error('Erro ao salvar transações importadas no Supabase:', err);
-      alert('Erro ao sincronizar importação: ' + err.message);
+      showToast('Erro ao sincronizar importação: ' + err.message, 'danger');
     }
   }
 
