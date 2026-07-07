@@ -4059,17 +4059,49 @@ function setupImportStatement() {
         if (invertCheckbox) invertCheckbox.checked = true;
       }
 
+      // Auto-detect the primary month of the statement (the mode of transaction months)
+      const monthCounts = {};
+      rawTxs.forEach(t => {
+        const m = t.date.substring(0, 7); // YYYY-MM
+        monthCounts[m] = (monthCounts[m] || 0) + 1;
+      });
+      let statementMonth = '';
+      let maxCount = 0;
+      for (const [m, count] of Object.entries(monthCounts)) {
+        if (count > maxCount) {
+          maxCount = count;
+          statementMonth = m;
+        }
+      }
+
+      let lastDayStr = '';
+      if (statementMonth) {
+        const [yr, mn] = statementMonth.split('-').map(Number);
+        const lastDayDate = new Date(yr, mn, 0); // Day 0 of next month is last day of current month
+        lastDayStr = `${yr}-${String(mn).padStart(2, '0')}-${String(lastDayDate.getDate()).padStart(2, '0')}`;
+      }
+
+      const adjustCheckbox = document.getElementById('import-adjust-dates');
+      const shouldAdjust = adjustCheckbox ? adjustCheckbox.checked : false;
+
       parsedTransactions = rawTxs
         .filter(t => shouldInvert ? t.amount > 0 : t.amount < 0)
-        .map((t, idx) => ({
-          id: `imp_${Date.now()}_${idx}`,
-          date: t.date,
-          desc: t.desc,
-          amount: Math.abs(t.amount),
-          category: autoCategorize(t.desc),
-          card: state.cards[0] || 'Cartão Principal',
-          specify: ''
-        }));
+        .map((t, idx) => {
+          let txDate = t.date;
+          // If transaction date is after the statement's primary month and adjustment is checked, force it to last day of statement month
+          if (shouldAdjust && statementMonth && t.date.substring(0, 7) > statementMonth) {
+            txDate = lastDayStr;
+          }
+          return {
+            id: `imp_${Date.now()}_${idx}`,
+            date: txDate,
+            desc: t.desc,
+            amount: Math.abs(t.amount),
+            category: autoCategorize(t.desc),
+            card: state.cards[0] || 'Cartão Principal',
+            specify: ''
+          };
+        });
 
       if (parsedTransactions.length === 0) {
         if (rawTxs.length > 0) {

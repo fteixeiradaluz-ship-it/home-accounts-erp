@@ -1,24 +1,9 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>ERP de Finanças Domésticas</title>
-  <!-- Google Fonts - Inter -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <!-- Chart.js CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- CSS Styles -->
-  <link rel="stylesheet" href="style.css">
-  <!-- PWA Manifest -->
-  <link rel="manifest" href="manifest.json">
-</head>
-<body>
+'use client';
 
-  <!-- Toast Notification Container -->
-  <div id="toast-container" class="toast-container"></div>
+import Script from 'next/script';
+
+export default function Home() {
+  const htmlContent = `
 
   <!-- Login Overlay Container -->
   <div id="login-container" class="login-container">
@@ -88,6 +73,9 @@
             <a href="#" onclick="showAuthView('recovery')" style="font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: 500;">Esqueci minha senha</a>
           </div>
           <button type="submit" class="btn btn-primary" style="margin-top: 8px;">Entrar</button>
+          <p class="auth-switch-text" style="font-size: 0.8rem; text-align: center; margin-top: 12px; color: var(--text-secondary);">
+            Não tem uma conta? <a href="#" onclick="showAuthView('register')" style="color: var(--primary); font-weight: 600; text-decoration: none;">Cadastre-se</a>
+          </p>
         </form>
       </div>
 
@@ -159,9 +147,6 @@
             <!-- Moon Icon -->
             <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
           </button>
-          <button id="header-logout-btn" class="theme-toggle-btn" aria-label="Sair" title="Sair do ERP" onclick="handleLogout()">
-            <span style="font-size: 1.15rem; line-height: 1;">🚪</span>
-          </button>
         </div>
       </div>
       <div class="month-selector-wrapper">
@@ -178,7 +163,6 @@
       <section id="dashboard-screen" class="app-screen active">
         <!-- Warning Banner for Income Limit -->
         <div id="income-alert-banner" class="income-alert-banner hidden"></div>
-        <div id="bills-alert-banner" class="bills-alert-banner hidden"></div>
 
         <!-- Dashboard Summary Cards -->
         <div class="summary-cards">
@@ -266,9 +250,6 @@
           </div>
           
           <div id="division-content" class="hidden" style="margin-top: 12px; border-top: 1px dashed var(--border-color); padding-top: 12px;">
-            <div style="background-color: rgba(58, 134, 255, 0.08); border-left: 3px solid var(--primary); padding: 10px 12px; font-size: 0.72rem; border-radius: var(--radius-sm); margin-bottom: 12px; color: var(--text-secondary); line-height: 1.4;">
-              💡 <strong>Como funciona a Divisão Proporcional:</strong> Esta seção divide as contas compartilhadas proporcionalmente aos salários de cada um (definidos nas Configurações). Quem ganha mais paga uma parcela proporcionalmente maior. O sistema analisa quem pagou cada despesa baseando-se no Cartão/PIX utilizado (Nubank, Inter e Itaú são assumidos para Fabrício; Santander e Bradesco para Patrícia; Dinheiro/PIX é dividido meio a meio) e mostra o acerto final necessário para equilibrar as contas.
-            </div>
             <div class="division-summary" style="display: flex; flex-direction: column; gap: 8px;">
               <div class="division-ratio-bar-wrapper">
                 <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px;">
@@ -305,13 +286,6 @@
                 <div id="div-reconciliation-card" class="reconciliation-alert" style="margin-top: 8px; padding: 12px; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 600; text-align: center;">
                   <!-- Transfer text goes here -->
                 </div>
-                
-                <div style="margin-top: 10px; display: flex; justify-content: center;">
-                  <button type="button" id="whatsapp-share-btn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px 12px; display: flex; align-items: center; gap: 6px; border: 1px solid #25D366; background: rgba(37, 211, 102, 0.05); color: #25D366; border-radius: var(--radius-sm); width: auto; font-weight: 600; display: none;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="fill: currentColor; flex-shrink: 0;"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.835-4.577c1.616.96 3.2 1.488 4.908 1.489 5.487 0 9.95-4.461 9.953-9.94.001-2.654-1.029-5.148-2.902-7.023C16.979 2.074 14.49 1.041 11.83 1.04c-5.49 0-9.954 4.464-9.957 9.944-.002 1.763.468 3.483 1.36 5.012l-.995 3.634 3.72-.975zm13.176-7.51c-.266-.134-1.579-.78-1.823-.867-.243-.088-.419-.133-.596.133-.176.265-.685.867-.839 1.043-.155.177-.31.199-.577.066-.266-.133-1.127-.415-2.148-1.328-.795-.71-1.332-1.588-1.488-1.854-.155-.266-.017-.41.117-.542.121-.12.266-.31.4-.464.133-.155.177-.265.266-.443.089-.177.044-.332-.022-.464-.067-.133-.596-1.436-.816-1.966-.215-.519-.465-.449-.636-.458-.166-.008-.356-.01-.546-.01-.19 0-.5.072-.76.357-.26.287-1 .977-1 2.383s1.02 2.762 1.16 2.95c.14.19 2.01 3.064 4.86 4.29.68.292 1.21.467 1.63.6.69.219 1.32.188 1.81.115.55-.082 1.58-.646 1.8-1.238.22-.593.22-1.102.15-1.21-.07-.108-.27-.174-.53-.308z"/></svg>
-                    Compartilhar Divisão
-                  </button>
-                </div>
               </div>
             </div>
           </div>
@@ -325,9 +299,6 @@
           </div>
           
           <div id="simulator-content" class="hidden" style="margin-top: 12px; border-top: 1px dashed var(--border-color); padding-top: 12px;">
-            <div style="background-color: rgba(58, 134, 255, 0.08); border-left: 3px solid var(--primary); padding: 10px 12px; font-size: 0.72rem; border-radius: var(--radius-sm); margin-bottom: 12px; color: var(--text-secondary); line-height: 1.4;">
-              💡 <strong>Como funciona o Simulador:</strong> Esta ferramenta permite projetar o impacto de uma compra parcelada nos limites de orçamento mensais antes de de fato realizá-la. O sistema simulará a divisão do valor em parcelas mensais a partir do mês escolhido, atualizando os gráficos e o progresso do orçamento para você avaliar se a compra cabe nas metas estabelecidas.
-            </div>
             <form id="simulator-form">
               <div class="form-row-2">
                 <div class="form-group">
@@ -535,7 +506,6 @@
             <div class="form-actions">
               <button type="submit" id="submit-expense-btn" class="btn btn-primary">Salvar Lançamento</button>
               <button type="button" id="cancel-edit-btn" class="btn btn-secondary hidden">Cancelar Edição</button>
-              <button type="button" id="clear-form-btn" class="btn btn-secondary">Limpar Campos</button>
             </div>
           </form>
         </div>
@@ -550,10 +520,6 @@
           <div id="import-content" class="hidden" style="margin-top: 12px; border-top: 1px dashed var(--border-color); padding-top: 12px;">
             <p class="card-desc">Carregue um arquivo <strong>OFX</strong> ou <strong>CSV</strong>. Os gastos serão extraídos e você poderá escolher quais importar.</p>
             
-            <div style="background-color: rgba(58, 134, 255, 0.08); border-left: 3px solid var(--primary); padding: 10px 12px; font-size: 0.72rem; border-radius: var(--radius-sm); margin-bottom: 12px; color: var(--text-secondary); line-height: 1.4;">
-              💡 <strong>Como funciona a Importação:</strong> Ao carregar o arquivo, o sistema lista apenas os gastos (valores de débito). Você pode filtrar, alterar a data, descrição e valor individualmente, aplicar categorias e cartões em lote e desmarcar o que não desejar incluir. Ao confirmar, o ERP procurará duplicatas comparando com transações existentes de mesmo valor; se houver conflitos, você poderá escolher individualmente como deseja tratá-los.
-            </div>
-
             <div class="import-drop-zone" id="import-drop-zone" style="border: 2px dashed var(--border-color); border-radius: var(--radius-sm); padding: 24px; text-align: center; cursor: pointer; transition: all 0.2s ease;">
               <span style="font-size: 0.85rem; color: var(--text-secondary);">📂 Clique para selecionar ou arraste o extrato aqui</span>
               <input type="file" id="import-statement-file" accept=".ofx,.csv" style="display: none;">
@@ -644,14 +610,8 @@
             </div>
             
             <h4 style="font-size: 0.8rem; font-weight: 600; margin-bottom: 8px; color: var(--text-primary);">Compras Parceladas Ativas:</h4>
-            <div id="active-installments-list" style="max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px; font-size: 0.75rem; margin-bottom: 16px;">
+            <div id="active-installments-list" style="max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px; font-size: 0.75rem;">
               <!-- Active installment items will be rendered here -->
-            </div>
-
-            <h4 style="font-size: 0.8rem; font-weight: 600; margin-top: 16px; margin-bottom: 8px; color: var(--text-primary);">🔮 Previsão de Saldo dos Próximos Meses:</h4>
-            <p class="card-desc" style="margin-bottom: 8px;">Projeção do saldo livre estimado (Receita Fixa - Contas Fixas - Parcelas de Cartão).</p>
-            <div id="balance-forecast-list" style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px; font-size: 0.75rem;">
-              <!-- Dynamic balance forecast will be rendered here -->
             </div>
           </div>
         </div>
@@ -846,22 +806,6 @@
           </form>
         </div>
 
-        <!-- Regras de Auto-Categorização Customizadas -->
-        <div class="section-card">
-          <h3>Regras de Auto-Categorização (Extrato)</h3>
-          <p class="card-desc">Defina termos que, se encontrados na descrição do extrato, sugerem uma categoria.</p>
-          
-          <form id="custom-rules-form" style="margin-top: 1rem;">
-            <div id="settings-rules-container" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
-              <!-- Linhas de regras geradas dinamicamente via JS -->
-            </div>
-            <div style="display: flex; gap: 8px;">
-              <button type="button" id="add-rule-btn" class="btn btn-secondary" style="padding: 10px; font-size: 0.85rem;">+ Nova Regra</button>
-              <button type="submit" class="btn btn-primary" style="padding: 10px; font-size: 0.85rem;">Salvar Regras</button>
-            </div>
-          </form>
-        </div>
-
         <!-- Data Import & Export -->
         <div class="section-card">
           <h3>Segurança & Backup dos Dados</h3>
@@ -876,7 +820,7 @@
           </div>
 
           <div style="margin-top: 10px;">
-            <button id="logout-app-btn" class="btn btn-secondary" style="width: 100%; font-weight: 700; border: 1px solid var(--border-color); background: rgba(255,255,255,0.03);" onclick="handleLogout()">🔒 Bloquear ERP (Sair)</button>
+            <button id="logout-app-btn" class="btn btn-secondary" style="width: 100%; font-weight: 700; border: 1px solid var(--border-color); background: rgba(255,255,255,0.03);">🔒 Bloquear ERP (Sair)</button>
           </div>
           
           <div class="danger-zone" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px dashed var(--border-color);">
@@ -1008,25 +952,15 @@
     </div>
   </div>
 
-  <!-- Modal de Confirmação Customizado -->
-  <div id="confirm-modal" class="modal-overlay hidden">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3 id="confirm-modal-title">Confirmação</h3>
-      </div>
-      <div class="modal-body" style="padding: 16px 0;">
-        <p id="confirm-modal-message">Deseja realmente prosseguir?</p>
-        <div id="confirm-modal-input-wrapper" class="hidden" style="margin-top: 12px;">
-          <input type="text" id="confirm-modal-input" placeholder="Digite para confirmar" style="background-color: var(--bg-app); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px 12px; font-size: 0.9rem; border-radius: var(--radius-sm); width: 100%;">
-        </div>
-      </div>
-      <div class="modal-actions" style="display: flex; gap: 8px;">
-        <button id="confirm-modal-cancel" class="btn btn-secondary">Cancelar</button>
-        <button id="confirm-modal-ok" class="btn btn-primary">Confirmar</button>
-      </div>
-    </div>
-  </div>
+  
+`;
 
-  <script src="app-client.js"></script>
-</body>
-</html>
+  return (
+    <>
+      <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
+      <Script src="https://cdn.jsdelivr.net/npm/chart.js" strategy="beforeInteractive" />
+      <Script src="/supabase-mock.js" strategy="beforeInteractive" />
+      <Script src="/app.js" strategy="afterInteractive" />
+    </>
+  );
+}
