@@ -2278,4 +2278,199 @@ body.light-mode .reconciliation-table tr {
   box-sizing: border-box;
   font-size: 0.8rem !important;
   height: 32px !important;
+
+/* ==========================================================================
+   DESKTOP ADAPTIVE LAYOUT REDESIGN
+   ========================================================================== */
+@media (min-width: 768px) {
+  /* Set body to layout sidebar side-by-side with main content */
+  .app-container {
+    max-width: 100% !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    flex-direction: row !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  /* Left Sidebar Style */
+  .app-navbar {
+    width: 250px !important;
+    height: 100vh !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    padding: 24px 16px !important;
+    border-top: none !important;
+    border-right: 1px solid var(--border-color) !important;
+    gap: 8px !important;
+    order: -1 !important;
+    background-color: var(--bg-card) !important;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15) !important;
+  }
+
+  body.light-mode .app-navbar {
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.05) !important;
+  }
+
+  /* Show Logo */
+  .sidebar-brand {
+    display: flex !important;
+  }
+
+  /* Menu Buttons */
+  .nav-btn {
+    width: 100% !important;
+    flex-direction: row !important;
+    justify-content: flex-start !important;
+    padding: 12px 16px !important;
+    border-radius: var(--radius-sm) !important;
+    gap: 12px !important;
+    height: auto !important;
+    font-size: 0.9rem !important;
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    transition: all var(--transition-fast) !important;
+  }
+  
+  .nav-btn:hover {
+    background-color: var(--bg-card-hover) !important;
+  }
+  
+  .nav-btn.active {
+    background-color: var(--primary-glow) !important;
+    color: var(--primary) !important;
+    border-color: rgba(33, 150, 243, 0.15) !important;
+  }
+  
+  .nav-btn .nav-icon {
+    font-size: 1.25rem !important;
+    margin: 0 !important;
+  }
+  
+  .nav-btn .nav-label {
+    display: inline !important;
+    font-weight: 600 !important;
+  }
+
+  /* Floating Add Action Button -> Transform into unified item in menu */
+  .nav-btn-center {
+    width: 100% !important;
+    height: auto !important;
+    border-radius: var(--radius-sm) !important;
+    transform: none !important;
+    box-shadow: none !important;
+    position: static !important;
+    background: var(--gradient-fab) !important;
+    color: #fff !important;
+    margin: 16px 0 !important;
+    padding: 12px 16px !important;
+    justify-content: center !important;
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.25) !important;
+  }
+  
+  .nav-btn-center:hover {
+    filter: brightness(1.1);
+  }
+
+  .nav-btn-center::after {
+    content: "Novo Gasto";
+    font-weight: 700;
+    margin-left: 8px;
+    font-size: 0.85rem;
+  }
+
+  .nav-btn-center .nav-icon-fab {
+    font-size: 1.2rem !important;
+    line-height: 1 !important;
+  }
+  
+  /* Hide redundant middle 'Gastos' menu button */
+  .app-navbar button[data-tab="daily-screen"]:not(.nav-btn-center) {
+    display: none !important;
+  }
+
+  /* Content Wrapper (Top bar & main area) */
+  .app-content-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  /* Top Header on Desktop */
+  .app-header {
+    width: 100% !important;
+    padding: 16px 40px !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    background-color: var(--bg-app) !important;
+    flex-shrink: 0;
+    height: auto !important;
+  }
+  
+  .app-header .header-logo {
+    display: none !important; /* Hide logo inside content top bar since it is in sidebar */
+  }
+
+  /* Main Content Area */
+  .app-main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 40px !important;
+  }
+
+  /* Desktop Grid for Dashboard Summary Cards */
+  .summary-cards {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 16px !important;
+  }
+  
+  .summary-card {
+    flex: 1 !important;
+    min-width: 220px !important;
+    margin: 0 !important;
+  }
+
+  /* Desktop Charts Section Layout (Two-column grid) */
+  .charts-section {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 20px !important;
+  }
+  
+  /* Desktop Form Layouts (prevents forms from stretching too wide) */
+  .quick-expense-form, 
+  .fixed-bill-form, 
+  .card-settings-form {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px !important;
+    align-items: end;
+  }
+  
+  .quick-expense-form > div,
+  .fixed-bill-form > div {
+    grid-column: span 1;
+  }
+  
+  /* Make full span fields */
+  .quick-expense-form div:nth-child(1), /* Description */
+  .quick-expense-form div:nth-child(4) /* Tags */ {
+    grid-column: span 2 !important;
+  }
+  
+  .quick-expense-form .form-actions,
+  .fixed-bill-form .form-actions {
+    grid-column: span 2 !important;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+  
+  .quick-expense-form button,
+  .fixed-bill-form button {
+    width: auto !important;
+    padding: 10px 24px !important;
+  }
 }
