@@ -4072,7 +4072,11 @@ function setupImportStatement() {
         }));
 
       if (parsedTransactions.length === 0) {
-        showToast('Nenhuma despesa foi encontrada no arquivo com as configurações atuais.', 'warning');
+        if (rawTxs.length > 0) {
+          showToast('Nenhuma transação encontrada com o sinal atual. Se for um extrato de cartão, tente marcar "Inverter Valores"!', 'warning');
+        } else {
+          showToast('Nenhuma despesa foi encontrada no arquivo com as configurações atuais.', 'warning');
+        }
         return;
       }
 
@@ -4455,15 +4459,16 @@ function setupImportStatement() {
 }
 
 function parseOFX(text) {
+  text = text.replace(/^\uFEFF/, '');
   const transactions = [];
-  const regex = /<STMTTRN>([\s\S]*?)<\/STMTTRN>/g;
+  const regex = /<STMTTRN>([\s\S]*?)<\/STMTTRN>/gi;
   let match;
 
   while ((match = regex.exec(text)) !== null) {
     const block = match[1];
-    const trnamtMatch = block.match(/<TRNAMT>([\d.-]+)/);
-    const memoMatch = block.match(/<MEMO>([^<\r\n]+)/) || block.match(/<NAME>([^<\r\n]+)/);
-    const dtpostedMatch = block.match(/<DTPOSTED>(\d{8})/);
+    const trnamtMatch = block.match(/<TRNAMT>([\d.-]+)/i);
+    const memoMatch = block.match(/<MEMO>([^<\r\n]+)/i) || block.match(/<NAME>([^<\r\n]+)/i);
+    const dtpostedMatch = block.match(/<DTPOSTED>(\d{8})/i);
 
     if (trnamtMatch && memoMatch && dtpostedMatch) {
       const amount = parseFloat(trnamtMatch[1]);
@@ -4486,6 +4491,7 @@ function parseOFX(text) {
 }
 
 function parseCSV(text) {
+  text = text.replace(/^\uFEFF/, '');
   const transactions = [];
   const lines = text.split(/\r?\n/);
   if (lines.length === 0) return [];
@@ -4513,22 +4519,25 @@ function parseCSV(text) {
     const desc = cols[descIdx].trim().replace(/^"(.*)"$/, '$1');
     let rawVal = cols[valIdx].trim().replace(/^"(.*)"$/, '$1');
 
-    if (rawVal.includes(',')) {
-      rawVal = rawVal.replace(/\./g, '').replace(/,/g, '.');
+    // Clean value: remove R$, spaces, and handle currency decimals robustly
+    let cleanVal = rawVal.replace(/R\$/gi, '').replace(/\s/g, '');
+    if (cleanVal.includes(',')) {
+      cleanVal = cleanVal.replace(/\./g, '').replace(/,/g, '.');
     }
-    const amount = parseFloat(rawVal);
+    cleanVal = cleanVal.replace(/[^\d.-]/g, '');
+    const amount = parseFloat(cleanVal);
 
     let formattedDate = '';
     if (rawDate.includes('/')) {
       const parts = rawDate.split('/');
       if (parts.length === 3) {
         let day, month, year;
-        if (parts[2].length === 4) {
+        if (parts[2].length === 4 || (parts[2].length === 2 && parts[0].length <= 2)) {
           day = parts[0].padStart(2, '0');
           month = parts[1].padStart(2, '0');
-          year = parts[2];
+          year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
         } else {
-          year = parts[0];
+          year = parts[0].length === 2 ? '20' + parts[0] : parts[0];
           month = parts[1].padStart(2, '0');
           day = parts[2].padStart(2, '0');
         }
@@ -4539,9 +4548,28 @@ function parseCSV(text) {
       if (parts.length === 3) {
         if (parts[0].length === 4) {
           formattedDate = rawDate;
-        } else {
+        } else if (parts[0].length === 2 && parts[2].length === 4) {
           formattedDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+        } else if (parts[2].length === 2) {
+          formattedDate = `20${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+        } else if (parts[0].length === 2 && parts[2].length === 2) {
+          formattedDate = `20${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
         }
+      }
+    } else if (rawDate.includes('.')) {
+      const parts = rawDate.split('.');
+      if (parts.length === 3) {
+        let day, month, year;
+        if (parts[2].length === 4 || (parts[2].length === 2 && parts[0].length <= 2)) {
+          day = parts[0].padStart(2, '0');
+          month = parts[1].padStart(2, '0');
+          year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
+        } else {
+          year = parts[0].length === 2 ? '20' + parts[0] : parts[0];
+          month = parts[1].padStart(2, '0');
+          day = parts[2].padStart(2, '0');
+        }
+        formattedDate = `${year}-${month}-${day}`;
       }
     }
 
