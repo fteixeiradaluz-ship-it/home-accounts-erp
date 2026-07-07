@@ -591,6 +591,16 @@ export default function Home() {
                 <button type="button" id="cancel-import-btn" class="btn btn-secondary" style="padding: 8px 12px; font-size: 0.8rem;">Cancelar</button>
               </div>
             </div>
+
+            <!-- Histórico de Importações Recentes -->
+            <div id="import-history-area" class="hidden" style="margin-top: 20px; border-top: 1px dashed var(--border-color); padding-top: 14px;">
+              <h4 style="font-size: 0.82rem; font-weight: 600; margin-bottom: 8px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                ↩️ Importações Recentes (Desfazer)
+              </h4>
+              <div id="import-history-list" style="display: flex; flex-direction: column; gap: 8px;">
+                <!-- Batches will be rendered here -->
+              </div>
+            </div>
           </div>
         </div>
 

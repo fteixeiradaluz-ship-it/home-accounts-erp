@@ -1064,6 +1064,9 @@ function updateUI() {
   if (typeof renderQuickTagsChips === 'function') {
     renderQuickTagsChips();
   }
+  if (typeof window.renderImportHistory === 'function') {
+    window.renderImportHistory();
+  }
 }
 
 // Format numbers to currency (Real R$)
@@ -3994,6 +3997,7 @@ function setupImportStatement() {
   if (!dropZone) return;
 
   let parsedTransactions = [];
+  let currentImportFileName = '';
 
   dropZone.addEventListener('click', () => fileInput.click());
   
@@ -4019,6 +4023,7 @@ function setupImportStatement() {
   });
 
   function handleFile(file) {
+    currentImportFileName = file.name;
     const reader = new FileReader();
     const ext = file.name.split('.').pop().toLowerCase();
     
@@ -4439,6 +4444,9 @@ function setupImportStatement() {
       });
     }
 
+    const batchId = 'batch_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+    const fileTag = 'file_' + (currentImportFileName || 'extrato').replace(/[^a-zA-Z0-9.-]/g, '_');
+
     const tempExpenses = [];
     const dbExpenses = [];
 
@@ -4453,7 +4461,7 @@ function setupImportStatement() {
         category: tx.category,
         card: tx.card,
         specify: tx.specify || '',
-        tags: []
+        tags: [batchId, fileTag]
       });
 
       dbExpenses.push({
@@ -4465,7 +4473,7 @@ function setupImportStatement() {
         category: tx.category,
         card: tx.card,
         specify: tx.specify || '',
-        tags: []
+        tags: [batchId, fileTag]
       });
     });
 
@@ -4541,7 +4549,126 @@ function setupImportStatement() {
     tbody.innerHTML = '';
     reconciliationArea.classList.add('hidden');
     fileInput.value = '';
+    renderImportHistory();
   }
+
+  function getImportBatches() {
+    const batches = {};
+    state.dailyExpenses.forEach(exp => {
+      if (exp.tags && Array.isArray(exp.tags)) {
+        const batchTag = exp.tags.find(t => t.startsWith('batch_'));
+        const fileTag = exp.tags.find(t => t.startsWith('file_'));
+        if (batchTag) {
+          if (!batches[batchTag]) {
+            let fileName = 'Extrato Importado';
+            if (fileTag) {
+              fileName = fileTag.replace(/^file_/, '');
+              const parts = fileName.split('_');
+              if (parts.length > 1) {
+                const ext = parts[parts.length - 1];
+                if (ext === 'csv' || ext === 'ofx') {
+                  parts[parts.length - 1] = '.' + ext;
+                  fileName = parts.slice(0, -1).join(' ') + parts[parts.length - 1];
+                } else {
+                  fileName = parts.join(' ');
+                }
+              } else {
+                fileName = fileName.replace(/_/g, ' ');
+              }
+            }
+            
+            batches[batchTag] = {
+              id: batchTag,
+              fileName: fileName,
+              count: 0,
+              amount: 0,
+              date: ''
+            };
+            
+            const timestampStr = batchTag.replace(/^batch_/, '');
+            const timeBase36 = timestampStr.substring(0, 8);
+            try {
+              const ms = parseInt(timeBase36, 36);
+              if (!isNaN(ms)) {
+                batches[batchTag].date = new Date(ms).toLocaleString('pt-BR');
+              }
+            } catch (e) {}
+          }
+          batches[batchTag].count += 1;
+          batches[batchTag].amount += exp.amount;
+        }
+      }
+    });
+    return Object.values(batches).sort((a, b) => b.id.localeCompare(a.id));
+  }
+
+  function renderImportHistory() {
+    const listContainer = document.getElementById('import-history-list');
+    const areaContainer = document.getElementById('import-history-area');
+    if (!listContainer || !areaContainer) return;
+
+    const batches = getImportBatches();
+    if (batches.length === 0) {
+      areaContainer.classList.add('hidden');
+      return;
+    }
+
+    areaContainer.classList.remove('hidden');
+    listContainer.innerHTML = '';
+
+    batches.forEach(batch => {
+      const itemHTML = `
+        <div style="background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-weight: 600; font-size: 0.8rem; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">📂 ${batch.fileName}</div>
+            <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px;">
+              📅 ${batch.date} | 📊 ${batch.count} lançamentos | 💰 Total: ${formatCurrency(batch.amount)}
+            </div>
+          </div>
+          <button type="button" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.7rem; background-color: rgba(230, 57, 70, 0.1); color: var(--danger); border: 1px solid rgba(230, 57, 70, 0.2);" onclick="deleteImportBatch('${batch.id}', '${batch.fileName.replace(/'/g, "\\'")}')">
+            🗑️ Excluir
+          </button>
+        </div>
+      `;
+      listContainer.insertAdjacentHTML('beforeend', itemHTML);
+    });
+  }
+
+  async function deleteImportBatch(batchId, fileName) {
+    if (await showConfirmModal(`Deseja realmente excluir todas as transações importadas do arquivo "${fileName}"? Isso removerá permanentemente os lançamentos.`, { title: 'Excluir Importação' })) {
+      const toDeleteIds = state.dailyExpenses
+        .filter(exp => exp.tags && exp.tags.includes(batchId))
+        .map(exp => exp.id);
+        
+      if (toDeleteIds.length === 0) return;
+      
+      try {
+        const { error } = await supabase
+          .from('daily_expenses')
+          .delete()
+          .in('id', toDeleteIds)
+          .eq('user_id', loggedInUserId);
+          
+        if (error) throw error;
+        
+        state.dailyExpenses = state.dailyExpenses.filter(exp => !toDeleteIds.includes(exp.id));
+        saveState();
+        updateUI();
+        showToast(`${toDeleteIds.length} transações excluídas com sucesso!`, 'success');
+      } catch (err) {
+        console.error('Erro ao excluir lote de importação:', err);
+        showToast('Erro ao excluir lote: ' + err.message, 'danger');
+      }
+    }
+  }
+
+  // Expose methods to global scope
+  window.deleteImportBatch = deleteImportBatch;
+  window.getImportBatches = getImportBatches;
+  window.renderImportHistory = renderImportHistory;
+
+  // Render on load
+  renderImportHistory();
 }
 
 function parseOFX(text) {
