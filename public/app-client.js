@@ -4405,6 +4405,40 @@ function setupImportStatement() {
       return;
     }
 
+    // Learn new categorization rules based on user manual adjustments during import
+    const newRules = [];
+    if (loggedInUserId) {
+      if (!state.budgetLimits) state.budgetLimits = {};
+      if (!state.budgetLimits._autoCategorizeRules) {
+        state.budgetLimits._autoCategorizeRules = [];
+      }
+
+      toImport.forEach(tx => {
+        const initialGuess = autoCategorize(tx.desc);
+        if (tx.category !== initialGuess) {
+          // Extract a clean keyword
+          let cleanKeyword = tx.desc
+            .replace(/\d+/g, '') // remove numbers
+            .replace(/[^\w\sÀ-ÿ]/g, '') // remove special characters
+            .trim();
+          // Keep words with at least 3 letters
+          const words = cleanKeyword.split(/\s+/).filter(w => w.length >= 3);
+          if (words.length > 0) {
+            const keyword = words.slice(0, 3).join(' '); // first 3 words
+            // Verify if rule already exists
+            const exists = state.budgetLimits._autoCategorizeRules.some(r => r.keyword.toLowerCase() === keyword.toLowerCase());
+            if (!exists && keyword.length >= 3) {
+              state.budgetLimits._autoCategorizeRules.push({
+                keyword: keyword,
+                category: tx.category
+              });
+              newRules.push({ keyword, category: tx.category });
+            }
+          }
+        }
+      });
+    }
+
     const tempExpenses = [];
     const dbExpenses = [];
 
@@ -4458,6 +4492,23 @@ function setupImportStatement() {
         state.dailyExpenses.push(...tempExpenses);
       }
 
+      // If we learned new rules, save user settings to DB
+      if (newRules.length > 0) {
+        const { error: settingsError } = await supabase
+          .from('user_settings')
+          .upsert({
+            user_id: loggedInUserId,
+            salary_fabricio: state.salaryFabricio,
+            salary_patricia: state.salaryPatricia,
+            extra_income: state.extraIncome,
+            cards: state.cards,
+            savings_goal_type: state.savingsGoalType,
+            savings_goal_value: state.savingsGoalValue,
+            budget_limits: state.budgetLimits
+          });
+        if (settingsError) console.error('Erro ao salvar novas regras:', settingsError);
+      }
+
       saveState();
       updateUI();
       
@@ -4467,6 +4518,9 @@ function setupImportStatement() {
       }
       if (toDeleteIds.length > 0) {
         msg += `${toDeleteIds.length} lançamentos duplicados removidos. `;
+      }
+      if (newRules.length > 0) {
+        msg += `Aprendidas ${newRules.length} regras automáticas. `;
       }
       showToast(msg + 'Sincronizado com sucesso!', 'success');
       resetImport();
