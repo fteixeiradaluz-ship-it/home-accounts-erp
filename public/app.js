@@ -882,10 +882,14 @@ function setupTabs() {
   // FAB Quick Add Shortcut
   const fab = document.getElementById('quick-add-fab');
   if (fab) {
-    fab.addEventListener('click', () => {
-      // Find the normal daily screen tab button and click it
-      const dailyBtn = document.querySelector('.nav-btn[data-tab="daily-screen"]');
-      if (dailyBtn) dailyBtn.click();
+    fab.addEventListener('click', (e) => {
+      // Only redirect to hidden daily button on mobile/screens where the main button is hidden
+      // If we are on desktop, the FAB is styled as a main sidebar button.
+      if (window.innerWidth < 768) {
+        e.preventDefault();
+        const dailyBtn = document.querySelector('.nav-btn[data-tab="daily-screen"]:not(.nav-btn-center)');
+        if (dailyBtn) dailyBtn.click();
+      }
     });
   }
 }
@@ -4104,7 +4108,8 @@ function setupImportStatement() {
             amount: Math.abs(t.amount),
             category: autoCategorize(t.desc),
             card: state.cards[0] || 'Cartão Principal',
-            specify: ''
+            specify: '',
+            selected: true
           };
         });
 
@@ -4117,20 +4122,186 @@ function setupImportStatement() {
         return;
       }
 
+      // Use the statementMonth (mode month) as the default calendar month
+      currentCalendarMonth = statementMonth || (parsedTransactions.length > 0 ? parsedTransactions[0].date.substring(0, 7) : '');
+      
+      // Find the first transaction in this month to select by default
+      const txInMonth = parsedTransactions.find(t => t.date.substring(0, 7) === currentCalendarMonth);
+      if (txInMonth) {
+        selectedCalendarDate = txInMonth.date;
+      } else if (parsedTransactions.length > 0) {
+        selectedCalendarDate = parsedTransactions[0].date;
+      } else {
+        selectedCalendarDate = '';
+      }
+
       showToast(`Arquivo "${file.name}" carregado com sucesso! ${parsedTransactions.length} transações encontradas para conciliação.`, 'success');
-      renderReconciliationTable();
+      
+      reconciliationArea.classList.remove('hidden');
+      updateImportCount();
+      
+      const bulkCardSelect = document.getElementById('bulk-card-select');
+      if (bulkCardSelect) {
+        bulkCardSelect.innerHTML = '<option value="">Cartão...</option>';
+        state.cards.forEach(card => {
+          const option = document.createElement('option');
+          option.value = card;
+          option.textContent = card;
+          bulkCardSelect.appendChild(option);
+        });
+      }
+
+      renderImportCalendar();
+      renderImportDayTransactions();
     };
     reader.readAsText(file);
   }
 
-  function renderReconciliationTable() {
-    tbody.innerHTML = '';
-    
-    parsedTransactions.forEach((tx, index) => {
+  let currentCalendarMonth = ''; // YYYY-MM
+  let selectedCalendarDate = ''; // YYYY-MM-DD
+
+  function renderImportCalendar() {
+    const daysContainer = document.getElementById('import-calendar-days');
+    const monthTitle = document.getElementById('import-calendar-month-title');
+    if (!daysContainer || !monthTitle) return;
+
+    if (!currentCalendarMonth && parsedTransactions.length > 0) {
+      currentCalendarMonth = parsedTransactions[0].date.substring(0, 7);
+    }
+
+    if (!currentCalendarMonth) {
+      daysContainer.innerHTML = '';
+      monthTitle.textContent = 'Mês do Extrato';
+      return;
+    }
+
+    const [year, month] = currentCalendarMonth.split('-').map(Number);
+    const monthNames = [
+      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ];
+    monthTitle.textContent = `${monthNames[month - 1]} de ${year}`;
+
+    const firstDay = new Date(year, month - 1, 1);
+    const startDayOfWeek = firstDay.getDay(); // 0 is Sunday
+    const totalDays = new Date(year, month, 0).getDate();
+
+    daysContainer.innerHTML = '';
+
+    // Render empty cells before the 1st
+    for (let i = 0; i < startDayOfWeek; i++) {
+      const emptyDiv = document.createElement('div');
+      emptyDiv.className = 'import-calendar-day empty';
+      daysContainer.appendChild(emptyDiv);
+    }
+
+    // Render day cells
+    for (let d = 1; d <= totalDays; d++) {
+      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const dayTxs = parsedTransactions.filter(t => t.date === dateStr);
+      
+      const dayDiv = document.createElement('div');
+      dayDiv.className = 'import-calendar-day';
+      if (dayTxs.length > 0) {
+        dayDiv.classList.add('has-transactions');
+      }
+      if (selectedCalendarDate === dateStr) {
+        dayDiv.classList.add('active');
+      }
+
+      const numSpan = document.createElement('span');
+      numSpan.className = 'day-num';
+      numSpan.textContent = d;
+      dayDiv.appendChild(numSpan);
+
+      if (dayTxs.length > 0) {
+        const badge = document.createElement('span');
+        badge.className = 'day-badge';
+        badge.textContent = dayTxs.length;
+        dayDiv.appendChild(badge);
+      }
+
+      dayDiv.onclick = () => selectCalendarDate(dateStr);
+      daysContainer.appendChild(dayDiv);
+    }
+  }
+
+  window.prevImportCalendarMonth = function() {
+    if (!currentCalendarMonth) return;
+    const [year, month] = currentCalendarMonth.split('-').map(Number);
+    let prevMonth = month - 1;
+    let prevYear = year;
+    if (prevMonth === 0) {
+      prevMonth = 12;
+      prevYear--;
+    }
+    currentCalendarMonth = `${prevYear}-${String(prevMonth).padStart(2, '0')}`;
+    renderImportCalendar();
+  };
+
+  window.nextImportCalendarMonth = function() {
+    if (!currentCalendarMonth) return;
+    const [year, month] = currentCalendarMonth.split('-').map(Number);
+    let nextMonth = month + 1;
+    let nextYear = year;
+    if (nextMonth === 13) {
+      nextMonth = 1;
+      nextYear++;
+    }
+    currentCalendarMonth = `${nextYear}-${String(nextMonth).padStart(2, '0')}`;
+    renderImportCalendar();
+  };
+
+  function selectCalendarDate(dateStr) {
+    selectedCalendarDate = dateStr;
+    currentCalendarMonth = dateStr.substring(0, 7);
+    renderImportCalendar();
+    renderImportDayTransactions();
+  }
+
+  function renderImportDayTransactions() {
+    const listContainer = document.getElementById('import-day-transactions-list');
+    const titleEl = document.getElementById('import-selected-day-title');
+    if (!listContainer || !titleEl) return;
+
+    if (!selectedCalendarDate) {
+      listContainer.innerHTML = '';
+      titleEl.textContent = 'Selecione um dia no calendário';
+      return;
+    }
+
+    const [year, month, day] = selectedCalendarDate.split('-');
+    titleEl.textContent = `📅 Gastos do dia ${day}/${month}/${year}`;
+
+    const dayTxs = parsedTransactions.filter(t => t.date === selectedCalendarDate);
+
+    if (dayTxs.length === 0) {
+      listContainer.innerHTML = '<div style="text-align: center; color: var(--text-secondary); font-size: 0.8rem; padding: 16px 0;">Nenhum lançamento para esta data.</div>';
+      return;
+    }
+
+    listContainer.innerHTML = '';
+
+    dayTxs.forEach((tx) => {
       let catOptions = '';
-      const categories = Object.keys(state.budgetLimits).filter(k => !k.startsWith('_'));
+      const categoryEmojis = {
+        'Moradia': '🏠 Moradia',
+        'Transporte': '🚗 Transporte',
+        'Saúde': '🏥 Saúde',
+        'Alimentação': '🍕 Alimentação',
+        'Lanches': '🍔 Lanches',
+        'Alimentação Trabalho': '🍱 Alimentação Trabalho',
+        'Lazer & Assinaturas': '🎬 Lazer & Assinaturas',
+        'Seguros & Proteção': '🛡️ Seguros & Proteção',
+        'Outros': '⚙️ Outros'
+      };
+      let categories = Object.keys(state.budgetLimits || {}).filter(k => !k.startsWith('_'));
+      if (categories.length === 0) {
+        categories = Object.keys(categoryEmojis);
+      }
       categories.forEach(cat => {
-        catOptions += `<option value="${cat}" ${tx.category === cat ? 'selected' : ''}>${cat}</option>`;
+        const label = categoryEmojis[cat] || cat;
+        catOptions += `<option value="${cat}" ${tx.category === cat ? 'selected' : ''}>${label}</option>`;
       });
 
       let cardOptions = '';
@@ -4138,56 +4309,58 @@ function setupImportStatement() {
         cardOptions += `<option value="${card}" ${tx.card === card ? 'selected' : ''}>${card}</option>`;
       });
 
-      const rowHTML = `
-        <tr id="row_${tx.id}">
-          <td data-label="Selecionar" style="padding: 8px; text-align: center; border-bottom: 1px solid var(--border-color);">
-            <input type="checkbox" class="import-row-checkbox" checked data-id="${tx.id}" onchange="updateImportCount()">
-          </td>
-          <td data-label="Data" style="padding: 8px; border-bottom: 1px solid var(--border-color); white-space: nowrap;">
-            <input type="date" value="${tx.date}" style="padding:2px 4px; font-size:0.75rem;" onchange="updateImportTxData('${tx.id}', 'date', this.value)">
-          </td>
-          <td data-label="Descrição" style="padding: 8px; border-bottom: 1px solid var(--border-color);">
-            <input type="text" value="${tx.desc}" style="padding:2px 4px; font-size:0.75rem;" onchange="updateImportTxData('${tx.id}', 'desc', this.value)">
-          </td>
-          <td data-label="Valor" style="padding: 8px; border-bottom: 1px solid var(--border-color); font-weight: bold; color: var(--danger);">
-            R$ <input type="number" step="0.01" value="${tx.amount.toFixed(2)}" style="padding:2px 4px; font-size:0.75rem; width: 60px; text-align:right;" onchange="updateImportTxData('${tx.id}', 'amount', this.value)">
-          </td>
-          <td data-label="Categoria" style="padding: 8px; border-bottom: 1px solid var(--border-color);">
-            <select style="padding:2px 4px; font-size:0.75rem; width: 100%;" onchange="onImportCategoryChange('${tx.id}', this.value)">
-              ${catOptions}
-            </select>
-            <input type="text" id="specify_input_${tx.id}" placeholder="Especificar..." value="${tx.specify || ''}" class="import-specify-input ${tx.category === 'Outros' ? '' : 'hidden'}" style="padding:2px 4px; font-size:0.7rem; width: 100%; margin-top: 4px;" onchange="updateImportTxData('${tx.id}', 'specify', this.value)">
-          </td>
-          <td data-label="Cartão" style="padding: 8px; border-bottom: 1px solid var(--border-color);">
-            <select style="padding:2px 4px; font-size:0.75rem;" onchange="updateImportTxData('${tx.id}', 'card', this.value)">
-              ${cardOptions}
-            </select>
-          </td>
-        </tr>
+      const cardHTML = `
+        <div id="card_${tx.id}" class="import-tx-card ${tx.selected ? '' : 'unchecked'}">
+          <div class="import-tx-card-header">
+            <label style="display: flex; align-items: center; gap: 8px; font-weight: 600; cursor: pointer; font-size: 0.8rem; color: var(--text-primary);">
+              <input type="checkbox" ${tx.selected ? 'checked' : ''} onchange="toggleImportTxSelection('${tx.id}', this.checked)">
+              <span>Importar este lançamento</span>
+            </label>
+            <span style="font-weight: 700; color: var(--danger); font-size: 0.85rem;">
+              R$ <input type="number" step="0.01" value="${tx.amount.toFixed(2)}" style="padding: 2px 4px; font-size: 0.75rem; width: 70px; text-align: right; background: var(--bg-app); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: var(--radius-sm);" onchange="updateImportTxData('${tx.id}', 'amount', this.value)">
+            </span>
+          </div>
+          <div class="import-tx-card-body">
+            <div class="form-group" style="margin: 0;">
+              <label style="font-size: 0.65rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">Descrição</label>
+              <input type="text" value="${tx.desc}" style="padding: 4px 6px; font-size: 0.75rem; width: 100%; background: var(--bg-app); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: var(--radius-sm);" onchange="updateImportTxData('${tx.id}', 'desc', this.value)">
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label style="font-size: 0.65rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">Cartão / Meio Pagamento</label>
+              <select style="padding: 4px 6px; font-size: 0.75rem; width: 100%; height: 28px; background: var(--bg-app); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm);" onchange="updateImportTxData('${tx.id}', 'card', this.value)">
+                ${cardOptions}
+              </select>
+            </div>
+            <div class="form-group" style="margin: 0; grid-column: 1 / -1;">
+              <label style="font-size: 0.65rem; color: var(--text-secondary); display: block; margin-bottom: 2px;">Categoria (Centro de Custo)</label>
+              <select style="padding: 4px 6px; font-size: 0.75rem; width: 100%; height: 28px; background: var(--bg-app); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm);" onchange="onImportCategoryChange('${tx.id}', this.value)">
+                ${catOptions}
+              </select>
+              <input type="text" id="specify_input_${tx.id}" placeholder="Especificar..." value="${tx.specify || ''}" class="import-specify-input ${tx.category === 'Outros' ? '' : 'hidden'}" style="padding: 4px 6px; font-size: 0.7rem; width: 100%; margin-top: 4px; background: var(--bg-app); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: var(--radius-sm);" onchange="updateImportTxData('${tx.id}', 'specify', this.value)">
+            </div>
+          </div>
+        </div>
       `;
-      tbody.insertAdjacentHTML('beforeend', rowHTML);
+      listContainer.insertAdjacentHTML('beforeend', cardHTML);
     });
-
-    reconciliationArea.classList.remove('hidden');
-    selectAllCheckbox.checked = true;
-    updateImportCount();
-    
-    // Clear search filter input on reload
-    const searchFilter = document.getElementById('import-search-filter');
-    if (searchFilter) searchFilter.value = '';
-
-    // Populate bulk cards select list
-    const bulkCardSelect = document.getElementById('bulk-card-select');
-    if (bulkCardSelect) {
-      bulkCardSelect.innerHTML = '<option value="">Cartão...</option>';
-      state.cards.forEach(card => {
-        const option = document.createElement('option');
-        option.value = card;
-        option.textContent = card;
-        bulkCardSelect.appendChild(option);
-      });
-    }
   }
+
+  window.toggleImportTxSelection = function(txId, isChecked) {
+    const tx = parsedTransactions.find(t => t.id === txId);
+    if (tx) {
+      tx.selected = isChecked;
+      const card = document.getElementById(`card_${txId}`);
+      if (card) {
+        if (isChecked) {
+          card.classList.remove('unchecked');
+        } else {
+          card.classList.add('unchecked');
+        }
+      }
+      updateImportCount();
+      renderImportCalendar();
+    }
+  };
 
   window.onImportCategoryChange = function(txId, category) {
     updateImportTxData(txId, 'category', category);
@@ -4211,35 +4384,21 @@ function setupImportStatement() {
       return;
     }
     
-    const checkedBoxes = document.querySelectorAll('.import-row-checkbox:checked');
-    if (checkedBoxes.length === 0) {
+    const selectedTxs = parsedTransactions.filter(t => t.selected);
+    if (selectedTxs.length === 0) {
       showToast('Nenhuma transação selecionada.', 'warning');
       return;
     }
     
-    checkedBoxes.forEach(box => {
-      const id = box.getAttribute('data-id');
-      const tx = parsedTransactions.find(t => t.id === id);
-      if (tx) {
-        tx.category = category;
-        const row = document.getElementById(`row_${id}`);
-        if (row) {
-          const selects = row.querySelectorAll('select');
-          if (selects[0]) selects[0].value = category;
-          
-          const specifyInput = document.getElementById(`specify_input_${id}`);
-          if (specifyInput) {
-            if (category === 'Outros') {
-              specifyInput.classList.remove('hidden');
-            } else {
-              specifyInput.classList.add('hidden');
-              tx.specify = '';
-              specifyInput.value = '';
-            }
-          }
-        }
+    selectedTxs.forEach(tx => {
+      tx.category = category;
+      if (category !== 'Outros') {
+        tx.specify = '';
       }
     });
+
+    showToast(`Categoria "${category}" aplicada em ${selectedTxs.length} transações.`, 'success');
+    renderImportDayTransactions();
   };
 
   window.applyBulkCard = function() {
@@ -4250,40 +4409,18 @@ function setupImportStatement() {
       return;
     }
     
-    const checkedBoxes = document.querySelectorAll('.import-row-checkbox:checked');
-    if (checkedBoxes.length === 0) {
+    const selectedTxs = parsedTransactions.filter(t => t.selected);
+    if (selectedTxs.length === 0) {
       showToast('Nenhuma transação selecionada.', 'warning');
       return;
     }
     
-    checkedBoxes.forEach(box => {
-      const id = box.getAttribute('data-id');
-      const tx = parsedTransactions.find(t => t.id === id);
-      if (tx) {
-        tx.card = card;
-        const row = document.getElementById(`row_${id}`);
-        if (row) {
-          const selects = row.querySelectorAll('select');
-          if (selects[1]) selects[1].value = card;
-        }
-      }
+    selectedTxs.forEach(tx => {
+      tx.card = card;
     });
-  };
 
-  window.filterImportTable = function() {
-    const filterVal = document.getElementById('import-search-filter').value.toLowerCase().trim();
-    const rows = document.querySelectorAll('#reconciliation-tbody tr');
-    
-    rows.forEach(row => {
-      const textInputs = row.querySelectorAll('input[type="text"]');
-      const desc = textInputs[0] ? textInputs[0].value.toLowerCase() : '';
-      
-      if (desc.includes(filterVal)) {
-        row.classList.remove('hidden');
-      } else {
-        row.classList.add('hidden');
-      }
-    });
+    showToast(`Cartão "${card}" aplicado em ${selectedTxs.length} transações.`, 'success');
+    renderImportDayTransactions();
   };
 
   window.updateImportTxData = function(txId, field, value) {
@@ -4298,19 +4435,13 @@ function setupImportStatement() {
   };
 
   window.updateImportCount = function() {
-    const checkedBoxes = document.querySelectorAll('.import-row-checkbox:checked');
-    countLabel.textContent = `${checkedBoxes.length} selecionadas`;
+    const selectedCount = parsedTransactions.filter(t => t.selected).length;
+    countLabel.textContent = `${selectedCount} selecionadas`;
   };
 
-  selectAllCheckbox.addEventListener('change', (e) => {
-    const boxes = document.querySelectorAll('.import-row-checkbox');
-    boxes.forEach(box => box.checked = e.target.checked);
-    updateImportCount();
-  });
-
   confirmBtn.addEventListener('click', async () => {
-    const checkedBoxes = document.querySelectorAll('.import-row-checkbox:checked');
-    if (checkedBoxes.length === 0) {
+    const toImportSelected = parsedTransactions.filter(t => t.selected);
+    if (toImportSelected.length === 0) {
       showToast('Nenhuma transação selecionada para importação.', 'warning');
       return;
     }
@@ -4324,11 +4455,8 @@ function setupImportStatement() {
     const toDeleteIds = [];
     const duplicateQueue = [];
 
-    checkedBoxes.forEach(box => {
-      const id = box.getAttribute('data-id');
-      const tx = parsedTransactions.find(t => t.id === id);
-      if (tx && tx.amount > 0) {
-        // Search for manual expense with same amount
+    toImportSelected.forEach(tx => {
+      if (tx.amount > 0) {
         const duplicate = state.dailyExpenses.find(exp => Math.abs(exp.amount - tx.amount) < 0.01);
         if (duplicate) {
           duplicateQueue.push({ tx, duplicate });
@@ -4357,7 +4485,6 @@ function setupImportStatement() {
       
       const { tx, duplicate } = queue.shift();
       
-      // Populate modal
       document.getElementById('rec-manual-date').textContent = duplicate.date.split('-').reverse().join('/');
       document.getElementById('rec-manual-desc').textContent = duplicate.desc;
       document.getElementById('rec-manual-cat').textContent = duplicate.category === 'Outros' && duplicate.specify ? `Outros (${duplicate.specify})` : duplicate.category;
@@ -4368,7 +4495,6 @@ function setupImportStatement() {
       document.getElementById('rec-import-cat').textContent = tx.category === 'Outros' && tx.specify ? `Outros (${tx.specify})` : tx.category;
       document.getElementById('rec-import-amount').textContent = formatCurrency(tx.amount);
       
-      // Show modal
       modal.classList.remove('hidden');
       
       const btnKeepManual = document.getElementById('btn-keep-manual');
@@ -4376,7 +4502,6 @@ function setupImportStatement() {
       const btnKeepBoth = document.getElementById('btn-keep-both');
       
       const cleanUpAndNext = (action) => {
-        // Remove event listeners by cloning buttons
         const newKeepManual = btnKeepManual.cloneNode(true);
         const newKeepImport = btnKeepImport.cloneNode(true);
         const newKeepBoth = btnKeepBoth.cloneNode(true);
@@ -4410,7 +4535,6 @@ function setupImportStatement() {
       return;
     }
 
-    // Learn new categorization rules based on user manual adjustments during import
     const newRules = [];
     if (loggedInUserId) {
       if (!state.budgetLimits) state.budgetLimits = {};
@@ -4421,16 +4545,13 @@ function setupImportStatement() {
       toImport.forEach(tx => {
         const initialGuess = autoCategorize(tx.desc);
         if (tx.category !== initialGuess) {
-          // Extract a clean keyword
           let cleanKeyword = tx.desc
-            .replace(/\d+/g, '') // remove numbers
-            .replace(/[^\w\sÀ-ÿ]/g, '') // remove special characters
+            .replace(/\d+/g, '')
+            .replace(/[^\w\sÀ-ÿ]/g, '')
             .trim();
-          // Keep words with at least 3 letters
           const words = cleanKeyword.split(/\s+/).filter(w => w.length >= 3);
           if (words.length > 0) {
-            const keyword = words.slice(0, 3).join(' '); // first 3 words
-            // Verify if rule already exists
+            const keyword = words.slice(0, 3).join(' ');
             const exists = state.budgetLimits._autoCategorizeRules.some(r => r.keyword.toLowerCase() === keyword.toLowerCase());
             if (!exists && keyword.length >= 3) {
               state.budgetLimits._autoCategorizeRules.push({
@@ -4500,7 +4621,6 @@ function setupImportStatement() {
         state.dailyExpenses.push(...tempExpenses);
       }
 
-      // If we learned new rules, save user settings to DB
       if (newRules.length > 0) {
         const { error: settingsError } = await supabase
           .from('user_settings')
@@ -4520,22 +4640,86 @@ function setupImportStatement() {
       saveState();
       updateUI();
       
-      let msg = '';
-      if (tempExpenses.length > 0) {
-        msg += `${tempExpenses.length} transações importadas. `;
+      if (tempExpenses.length === 0 && toDeleteIds.length > 0) {
+        showToast(`${toDeleteIds.length} lançamentos duplicados removidos. Sincronizado com sucesso!`, 'success');
+        resetImport();
+      } else {
+        showImportSummary(tempExpenses, toDeleteIds.length, newRules.length);
       }
-      if (toDeleteIds.length > 0) {
-        msg += `${toDeleteIds.length} lançamentos duplicados removidos. `;
-      }
-      if (newRules.length > 0) {
-        msg += `Aprendidas ${newRules.length} regras automáticas. `;
-      }
-      showToast(msg + 'Sincronizado com sucesso!', 'success');
-      resetImport();
     } catch (err) {
       console.error('Erro ao salvar transações importadas no Supabase:', err);
       showToast('Erro ao sincronizar importação: ' + err.message, 'danger');
     }
+  }
+
+  function showImportSummary(importedTxs, deletedCount, rulesCount) {
+    const modal = document.getElementById('import-summary-modal');
+    if (!modal) {
+      let msg = `${importedTxs.length} transações importadas. `;
+      if (deletedCount > 0) msg += `${deletedCount} duplicados removidos. `;
+      if (rulesCount > 0) msg += `Aprendidas ${rulesCount} regras. `;
+      showToast(msg + 'Sincronizado com sucesso!', 'success');
+      resetImport();
+      return;
+    }
+
+    document.getElementById('sum-count').textContent = importedTxs.length;
+    
+    const totalAmount = importedTxs.reduce((acc, tx) => acc + tx.amount, 0);
+    document.getElementById('sum-total-amount').textContent = formatCurrency(totalAmount);
+
+    const months = {};
+    importedTxs.forEach(tx => {
+      const m = tx.date.substring(0, 7);
+      months[m] = (months[m] || 0) + tx.amount;
+    });
+
+    const monthListContainer = document.getElementById('sum-month-breakdown');
+    monthListContainer.innerHTML = '';
+    
+    const sortedMonths = Object.keys(months).sort();
+    sortedMonths.forEach(m => {
+      const [year, month] = m.split('-');
+      const monthNames = [
+        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+      ];
+      const monthName = monthNames[parseInt(month, 10) - 1];
+      const label = `${monthName}/${year}`;
+      
+      const div = document.createElement('div');
+      div.style.display = 'flex';
+      div.style.justify = 'space-between';
+      div.style.padding = '2px 0';
+      div.innerHTML = `<span>📅 ${label}</span> <span style="font-weight: 600; color: var(--text-primary);">${formatCurrency(months[m])}</span>`;
+      monthListContainer.appendChild(div);
+    });
+
+    const categories = {};
+    importedTxs.forEach(tx => {
+      categories[tx.category] = (categories[tx.category] || 0) + tx.amount;
+    });
+
+    const catListContainer = document.getElementById('sum-category-breakdown');
+    catListContainer.innerHTML = '';
+    
+    const sortedCats = Object.keys(categories).sort((a, b) => categories[b] - categories[a]);
+    sortedCats.forEach(cat => {
+      const div = document.createElement('div');
+      div.style.display = 'flex';
+      div.style.justify = 'space-between';
+      div.style.padding = '2px 0';
+      div.innerHTML = `<span>🏷️ ${cat}</span> <span style="font-weight: 500; color: var(--text-secondary);">${formatCurrency(categories[cat])}</span>`;
+      catListContainer.appendChild(div);
+    });
+
+    const closeBtn = document.getElementById('btn-close-summary');
+    closeBtn.onclick = () => {
+      modal.classList.add('hidden');
+      resetImport();
+    };
+
+    modal.classList.remove('hidden');
   }
 
   cancelBtn.addEventListener('click', async () => {
@@ -4546,7 +4730,12 @@ function setupImportStatement() {
 
   function resetImport() {
     parsedTransactions = [];
-    tbody.innerHTML = '';
+    selectedCalendarDate = '';
+    currentCalendarMonth = '';
+    const daysContainer = document.getElementById('import-calendar-days');
+    if (daysContainer) daysContainer.innerHTML = '';
+    const listContainer = document.getElementById('import-day-transactions-list');
+    if (listContainer) listContainer.innerHTML = '';
     reconciliationArea.classList.add('hidden');
     fileInput.value = '';
     renderImportHistory();
@@ -4714,10 +4903,30 @@ function parseCSV(text) {
 
   const sampleLine = cleanLines[1];
   const delimiter = (sampleLine.split(';').length > sampleLine.split(',').length) ? ';' : ',';
-  const header = cleanLines[0].toLowerCase().split(delimiter);
+  
+  function splitCSVLine(line, delim) {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === delim && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  }
+
+  const header = splitCSVLine(cleanLines[0].toLowerCase(), delimiter);
   
   let dateIdx = header.findIndex(h => h.includes('data') || h.includes('date'));
-  let descIdx = header.findIndex(h => h.includes('desc') || h.includes('memo') || h.includes('nome') || h.includes('historico') || h.includes('histórico') || h.includes('name'));
+  let descIdx = header.findIndex(h => h.includes('desc') || h.includes('memo') || h.includes('nome') || h.includes('historico') || h.includes('histórico') || h.includes('name') || h.includes('estabelecimento') || h.includes('estab'));
   let valIdx = header.findIndex(h => h.includes('valor') || h.includes('val') || h.includes('amount') || h.includes('quant') || h.includes('preco') || h.includes('preço'));
 
   if (dateIdx === -1) dateIdx = 0;
@@ -4725,10 +4934,18 @@ function parseCSV(text) {
   if (valIdx === -1) valIdx = 2;
 
   for (let i = 1; i < cleanLines.length; i++) {
-    const cols = cleanLines[i].split(delimiter);
+    const cols = splitCSVLine(cleanLines[i], delimiter);
     if (cols.length <= Math.max(dateIdx, descIdx, valIdx)) continue;
 
-    const rawDate = cols[dateIdx].trim();
+    let rawDate = cols[dateIdx].trim().replace(/^"(.*)"$/, '$1');
+    // Strip time component if present (e.g., "10/07/2026 14:35" -> "10/07/2026")
+    if (rawDate.includes(' ')) {
+      rawDate = rawDate.split(' ')[0];
+    }
+    if (rawDate.includes('T')) {
+      rawDate = rawDate.split('T')[0];
+    }
+
     const desc = cols[descIdx].trim().replace(/^"(.*)"$/, '$1');
     let rawVal = cols[valIdx].trim().replace(/^"(.*)"$/, '$1');
 
@@ -4760,7 +4977,7 @@ function parseCSV(text) {
       const parts = rawDate.split('-');
       if (parts.length === 3) {
         if (parts[0].length === 4) {
-          formattedDate = rawDate;
+          formattedDate = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
         } else if (parts[0].length === 2 && parts[2].length === 4) {
           formattedDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
         } else if (parts[2].length === 2) {

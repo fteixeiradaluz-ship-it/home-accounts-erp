@@ -2296,6 +2296,8 @@ body.light-mode .reconciliation-table tr {
 
   /* Left Sidebar Style */
   .app-navbar {
+    display: flex !important;
+    position: static !important;
     width: 250px !important;
     height: 100vh !important;
     flex-direction: column !important;
@@ -2423,6 +2425,7 @@ body.light-mode .reconciliation-table tr {
 
   /* Desktop Grid for Dashboard Summary Cards */
   .summary-cards {
+    display: flex !important;
     flex-direction: row !important;
     flex-wrap: wrap !important;
     gap: 16px !important;
@@ -2436,6 +2439,7 @@ body.light-mode .reconciliation-table tr {
 
   /* Desktop Charts Section Layout (Two-column grid) */
   .charts-section {
+    display: grid !important;
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 20px !important;
   }
